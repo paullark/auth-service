@@ -1,0 +1,12 @@
+[default]
+debug = true
+service_name = "auth"
+allow_origins = ["*"]
+password_min_length = 9
+signing_algorithm = "RS256"
+access_token_ttl_minutes = 1000000
+refresh_token_ttl_minutes = 6000000
+
+[default.mongo]
+url = "mongodb://localhost:27017"
+database_name = "test"

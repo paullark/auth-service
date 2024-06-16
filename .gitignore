@@ -1,0 +1,12 @@
+
+# Ignore dynaconf secret files
+.secrets.toml
+
+.venv
+.idea
+.env
+.pytest_cache
+.mypy_cache
+.coverage*
+environment.toml
+__pycache__
