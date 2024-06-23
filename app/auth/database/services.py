@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from bson import ObjectId
+from fastapi import HTTPException
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pymongo import ReturnDocument
 
@@ -39,9 +40,10 @@ class Database:
         return await self.find(type(document), {"_id": res.inserted_id})
 
     async def replace[D](self, document: D) -> D:
-        document.updated = datetime.now()
         document_dict = document.dict(by_alias=True)
-        document_dict.update({"_id": ObjectId(document_dict["_id"])})
+        document_dict.update(
+            {"_id": ObjectId(document_dict["_id"]), "updated": datetime.now()}
+        )
         res = await self.database[document.collection()].find_one_and_replace(
             {"_id": ObjectId(document.id)},
             document_dict,
@@ -49,6 +51,14 @@ class Database:
         )
 
         return type(document)(**res)
+
+    async def delete[D](self, document: D) -> None:
+        res = await self.database[document.collection()].delete_one({"_id": ObjectId(document.id)})
+
+        if res.deleted_count == 1:
+           return None
+
+        raise HTTPException(status_code=404, detail="Document not found.")
 
 
 db = Database(settings.mongo.url, settings.mongo.database_name)

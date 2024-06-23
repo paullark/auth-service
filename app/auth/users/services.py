@@ -32,14 +32,11 @@ async def create_user(user: UserCreate) -> User:
 
 
 async def update_user(user: User, update: UserUpdate) -> User:
-    print(update)
-    print(update.dict())
     update_dict = update.dict(exclude_unset=True)
     updated_user = user.copy(update=update_dict)
-    print(updated_user)
     user = await db.replace(updated_user)
     return user
 
 
-async def delete_user(user: BaseDocument) -> None:
-    pass
+async def delete_user(user: User) -> None:
+    await db.delete(user)
