@@ -6,7 +6,10 @@ from app.auth.users.routes import users
 
 exception_handlers = {}
 
-app = FastAPI(exception_handlers=exception_handlers, openapi_url="/openapi.json" if settings.debug else "")
+app = FastAPI(
+    exception_handlers=exception_handlers,
+    openapi_url="/openapi.json" if settings.debug else ""
+)
 
 app.include_router(users)
 

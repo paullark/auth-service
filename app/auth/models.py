@@ -1,22 +1,44 @@
 from datetime import datetime
-from typing import Callable
+from enum import IntEnum
 
-from bson.objectid import ObjectId
-from pydantic import BaseModel, Field
+from bson import ObjectId
+from pydantic import BaseModel, Field, ConfigDict, Extra
 
 from app.auth.database.types import PyObjectId
 
 
-# from app.auth.database.coders import JSON_ENCODERS
-# from app.auth.database.types import ObjectId
-
-
 class BaseDocument(BaseModel):
-    id: PyObjectId = Field(default_factory=ObjectId, alias="_id")
+    id: PyObjectId = Field(default_factory=ObjectId, alias='_id')
+    created: datetime | None = None
+    updated: datetime | None = None
 
-    class Config:
-        collection: str
-        arbitrary_types_allowed = True
-        # json_encoders: dict[type[any], Callable[[any], any]] = {ObjectId: str}
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str},
+        populate_by_name=True,
+        extra=Extra.allow
+    )
 
 
+class SortDirection(IntEnum):
+    ascending = 1
+    descending = -1
+
+
+class ListParams(BaseModel):
+    sort_key: str = "_id"
+    sort_direction: SortDirection = SortDirection.descending
+    skip: int = Field(0, ge=0)
+    limit: int = Field(0, ge=0)
+
+    model_config = ConfigDict(
+        extra=Extra.forbid,
+        frozen=True
+    )
+
+    def to_query(self) -> dict[str, any]:
+        return {
+            "sort": {self.sort_key: self.sort_direction},
+            "skip": self.skip,
+            "limit": self.limit,
+        }
