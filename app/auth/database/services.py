@@ -56,7 +56,7 @@ class Database:
         res = await self.database[document.collection()].delete_one({"_id": ObjectId(document.id)})
 
         if res.deleted_count == 1:
-           return None
+            return None
 
         raise HTTPException(status_code=404, detail="Document not found.")
 

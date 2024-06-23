@@ -1,6 +1,7 @@
 from bson import ObjectId
 from pydantic import BaseModel
 
+from app.auth.authentication.services import get_password_hash
 from app.auth.database.types import PyObjectId
 from app.auth.database.services import db
 
@@ -28,7 +29,7 @@ async def get_user_list(
 
 async def create_user(user: UserCreate) -> User:
     user = User(**user.dict())
-    return await db.insert(user)
+    return await db.insert(user.copy(update={"password": get_password_hash(user.password)}))
 
 
 async def update_user(user: User, update: UserUpdate) -> User:
