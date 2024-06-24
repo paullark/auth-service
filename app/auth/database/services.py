@@ -6,7 +6,8 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pymongo import ReturnDocument
 
 from app.auth.config import settings
-from app.auth.models import BaseDocument, SortDirection
+from app.auth.database.exceptions import DocumentNotFound
+from app.auth.models import SortDirection
 
 
 class Database:
@@ -14,11 +15,14 @@ class Database:
         self.client = AsyncIOMotorClient(url)
         self.database: AsyncIOMotorDatabase = self.client[database_name]
 
-    async def find[D](self, model: type[D], query: dict[str, any]) -> D | None:
+    async def find[D](
+            self, model: type[D], query: dict[str, any], exception: bool = False
+    ) -> D | None:
         document = await self.database[model.collection()].find_one(query)
         if document is not None:
             return model(**document)
-
+        if exception:
+            raise DocumentNotFound(collection=model.collection(), query=query)
         return None
 
     async def find_many[D](

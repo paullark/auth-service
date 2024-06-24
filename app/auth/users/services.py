@@ -1,20 +1,21 @@
 from bson import ObjectId
-from pydantic import BaseModel
 
 from app.auth.authentication.services import get_password_hash
 from app.auth.database.types import PyObjectId
 from app.auth.database.services import db
 
-from app.auth.models import BaseDocument, ListParams
+from app.auth.models import ListParams
 from app.auth.users.models import User, UserCreate, UserUpdate
 
 
 async def get_user(user_id: PyObjectId) -> User:
-    return await db.find(User, {"_id": ObjectId(user_id)})
+    return await db.find(User, {"_id": ObjectId(user_id)}, exception=True)
 
 
 async def get_user_by_name(username: str) -> User | None:
-    return await db.find(User, {"username": {"$regex": username, "$options": "i"}})
+    return await db.find(
+        User, {"username": {"$regex": username, "$options": "i"}}, exception=True
+    )
 
 
 async def get_user_list(
