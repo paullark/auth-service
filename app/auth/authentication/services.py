@@ -5,7 +5,9 @@ import jwt
 from bson import ObjectId
 from fastapi import Depends
 from fastapi.security import SecurityScopes, HTTPAuthorizationCredentials, HTTPBearer
+from jwt import ExpiredSignatureError
 from passlib.context import CryptContext
+from pydantic import ValidationError
 from starlette import status
 from app.auth.config import settings
 from app.auth.authentication.exceptions import PasswordError, TokenDataError, NotEnoughPermissionError
@@ -68,11 +70,17 @@ def get_token_data(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(HTTPBearer())]
 ) -> TokenData:
     status_401 = status.HTTP_401_UNAUTHORIZED
-    token_data = TokenData(
-        **jwt.decode(
-            credentials.credentials, settings.secret_key, algorithms=["HS256"]
+    try:
+        token_data = TokenData(
+            **jwt.decode(
+                credentials.credentials, settings.secret_key, algorithms=["HS256"]
+            )
         )
-    )
+    except ExpiredSignatureError:
+        raise TokenDataError("Signature has expired.", status_401)
+    except ValidationError as error:
+        raise TokenDataError(str(error), status_401)
+
     if token_data.token_type != TokenType.access:
         raise TokenDataError("Invalid token type.", status_401)
 
