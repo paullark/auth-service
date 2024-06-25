@@ -1,8 +1,10 @@
+from datetime import datetime
 from enum import StrEnum
 
 from pydantic import BaseModel
 
 from app.auth.database.types import PyObjectId
+from app.auth.models import BaseDocument
 
 
 class TokenType(StrEnum):
@@ -20,10 +22,14 @@ class TokenPair(BaseModel):
     refresh_token: str
 
 
-class TokenData(BaseModel):
+class BaseTokenData(BaseModel):
     user_id: PyObjectId
+    scopes: list[RoleType]
+
+
+class TokenData(BaseTokenData):
     token_type: TokenType
-    role: RoleType
+    exp: datetime
 
 
 class BaseAuthData(BaseModel):
@@ -37,3 +43,12 @@ class SignupData(BaseAuthData):
 
 class LoginData(BaseAuthData):
     pass
+
+
+class AuthorizationData(BaseDocument):
+    user_id: PyObjectId
+    refresh_token: str
+
+    @classmethod
+    def collection(cls) -> str:
+        return "authorization"

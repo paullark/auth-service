@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from bson import ObjectId
 from fastapi import HTTPException
@@ -39,7 +39,7 @@ class Database:
         return [model(**document) async for document in documents]
 
     async def insert[D](self, document: D) -> D:
-        document.created = datetime.now()
+        document.created = datetime.now(timezone.utc)
         res = await self.database[document.collection()].insert_one(document.dict(by_alias=True))
         return await self.find(type(document), {"_id": res.inserted_id})
 

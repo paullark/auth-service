@@ -5,9 +5,13 @@ class AuthenticationError(BaseAuthException):
     pass
 
 
-class AuthenticationRequiredError(AuthenticationError):
+class TokenDataError(AuthenticationError):
     pass
 
 
 class PasswordError(AuthenticationError):
+    pass
+
+
+class NotEnoughPermissionError(AuthenticationError):
     pass

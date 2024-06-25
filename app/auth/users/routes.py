@@ -1,14 +1,21 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+import jwt
+from fastapi import APIRouter, Depends, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from starlette import status
 
+from app.auth.authentication.models import TokenData
+from app.auth.authentication.services import get_token_data
+from app.auth.config import settings
 from app.auth.models import ListParams
 from app.auth.users.models import User, UserCreate, UserUpdate
 from app.auth.users.services import get_user, create_user, get_user_by_name, get_user_list, update_user, delete_user
 
-users = APIRouter(prefix="/users", tags=["Users"])
+users = APIRouter(
+    prefix="/users", tags=["Users"], dependencies=[Security(get_token_data, scopes=["admin"])]
+)
 
 
 @users.get("/{user_id}")
