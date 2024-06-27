@@ -40,13 +40,20 @@ class Database:
 
     async def insert[D](self, document: D) -> D:
         document.created = datetime.now(timezone.utc)
-        res = await self.database[document.collection()].insert_one(document.dict(by_alias=True))
-        return await self.find(type(document), {"_id": res.inserted_id})
+        res = await self.database[document.collection()].insert_one(
+            document.dict(by_alias=True)
+        )
+        return await self.find(
+            type(document), {"_id": res.inserted_id}, exception=True
+        )
 
     async def replace[D](self, document: D) -> D:
         document_dict = document.dict(by_alias=True)
         document_dict.update(
-            {"_id": ObjectId(document_dict["_id"]), "updated": datetime.now()}
+            {
+                "_id": ObjectId(document_dict["_id"]),
+                "updated": datetime.now(timezone.utc)
+            }
         )
         res = await self.database[document.collection()].find_one_and_replace(
             {"_id": ObjectId(document.id)},
@@ -62,7 +69,7 @@ class Database:
         if res.deleted_count == 1:
             return None
 
-        raise HTTPException(status_code=404, detail="Document not found.")
+        raise DocumentNotFound(collection=document.collection(), query={"_id": document.id})
 
 
 db = Database(settings.mongo.url, settings.mongo.database_name)

@@ -5,16 +5,12 @@ from pydantic import BaseModel
 
 from app.auth.database.types import PyObjectId
 from app.auth.models import BaseDocument
+from app.auth.users.models import RoleType
 
 
 class TokenType(StrEnum):
     access = "access"
     refresh = "refresh"
-
-
-class RoleType(StrEnum):
-    admin = "admin"
-    user = "user"
 
 
 class TokenPair(BaseModel):
@@ -45,7 +41,7 @@ class LoginData(BaseAuthData):
     pass
 
 
-class AuthorizationData(BaseDocument):
+class Authorization(BaseDocument):
     user_id: PyObjectId
     refresh_token: str
 

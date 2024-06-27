@@ -11,11 +11,14 @@ from pydantic import ValidationError
 from starlette import status
 from app.auth.config import settings
 from app.auth.authentication.exceptions import PasswordError, TokenDataError, NotEnoughPermissionError
-from app.auth.authentication.models import TokenPair, BaseTokenData, RoleType, TokenData, TokenType, AuthorizationData
+from app.auth.authentication.models import (
+    TokenPair, BaseTokenData, RoleType, TokenData, TokenType, Authorization
+)
 from app.auth.database.services import db
 from app.auth.users.models import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+status_401 = status.HTTP_401_UNAUTHORIZED
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -32,8 +35,15 @@ async def authenticate_user(username: str, password: str) -> TokenPair:
         raise PasswordError(
             "Incorrect password.", status_code=status.HTTP_401_UNAUTHORIZED
         )
-    token_data = BaseTokenData(user_id=user.id, scopes=[RoleType.user])
-    return await create_token_pair(token_data)
+    token_data = BaseTokenData(user_id=user.id, scopes=user.roles)
+    token_pair = await create_token_pair(token_data)
+
+    await db.insert(
+        Authorization(
+            user_id=ObjectId(user.id), refresh_token=token_pair.refresh_token
+        )
+    )
+    return token_pair
 
 
 def create_token(data: BaseTokenData, token_type: TokenType, expires_in: int) -> str:
@@ -56,30 +66,31 @@ async def create_token_pair(data: BaseTokenData) -> TokenPair:
         data, TokenType.refresh, settings.refresh_token_exp_minutes
     )
 
-    await db.insert(
-        AuthorizationData(
-            user_id=ObjectId(data.user_id), refresh_token=refresh_token
-        )
-    )
-
     return TokenPair(access_token=access_token, refresh_token=refresh_token)
 
 
-def get_token_data(
-    security_scopes: SecurityScopes,
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(HTTPBearer())]
-) -> TokenData:
-    status_401 = status.HTTP_401_UNAUTHORIZED
+def decode_token(token: str) -> TokenData:
     try:
         token_data = TokenData(
             **jwt.decode(
-                credentials.credentials, settings.secret_key, algorithms=["HS256"]
+                token, settings.secret_key, algorithms=["HS256"]
             )
         )
     except ExpiredSignatureError:
         raise TokenDataError("Signature has expired.", status_401)
     except ValidationError as error:
         raise TokenDataError(str(error), status_401)
+    except Exception as error:
+        raise TokenDataError(str(error), status_401)
+
+    return token_data
+
+
+def get_token_data(
+    security_scopes: SecurityScopes,
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(HTTPBearer())]
+) -> TokenData:
+    token_data = decode_token(credentials.credentials)
 
     if token_data.token_type != TokenType.access:
         raise TokenDataError("Invalid token type.", status_401)
@@ -89,3 +100,24 @@ def get_token_data(
             return token_data
 
     raise NotEnoughPermissionError("Not enough permissions.", status_401)
+
+
+async def refresh_token_pair(token: str) -> TokenPair:
+    token_data = decode_token(token)
+    if token_data.token_type != TokenType.refresh:
+        raise TokenDataError("Invalid token type.", status_401)
+
+    user = await db.find(User, {"_id": ObjectId(token_data.user_id)}, exception=True)
+    authorization = await db.find(Authorization, {"refresh_token": token}, exception=True)
+    token_pair = await create_token_pair(
+        BaseTokenData(user_id=user.id, scopes=user.roles)
+    )
+    authorization.refresh_token = token_pair.refresh_token
+    await db.replace(authorization)
+
+    return token_pair
+
+
+async def delete_authorization(token: str) -> None:
+    authorization = await db.find(Authorization, {"refresh_token": token}, exception=True)
+    await db.delete(authorization)

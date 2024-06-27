@@ -1,9 +1,10 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Security
+from starlette import status
 
 from app.auth.authentication.models import SignupData, LoginData, TokenData, TokenPair
-from app.auth.authentication.services import authenticate_user, get_token_data
+from app.auth.authentication.services import authenticate_user, get_token_data, refresh_token_pair, delete_authorization
 from app.auth.users.models import User
 from app.auth.users.services import get_user
 
@@ -27,11 +28,11 @@ async def login(login_data: LoginData) -> TokenPair:
     return await authenticate_user(**login_data.dict())
 
 
-@auth.post("/logout")
-async def logout() -> None:
-    pass
+@auth.post("/logout", status_code=status.HTTP_401_UNAUTHORIZED)
+async def logout(refresh_token: Annotated[str, Body(embed=True)]) -> None:
+    await delete_authorization(refresh_token)
 
 
-@auth.patch("/refresh")
-async def refresh(refresh_token: str = Body(embed=True)) -> TokenPair:
-    pass
+@auth.post("/refresh")
+async def refresh(refresh_token: Annotated[str, Body(embed=True)]) -> TokenPair:
+    return await refresh_token_pair(refresh_token)
