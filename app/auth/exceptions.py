@@ -9,7 +9,9 @@ from starlette.responses import JSONResponse
 
 
 class BaseAuthException(Exception):
-    def __init__(self, message: str, status_code: int = status.HTTP_400_BAD_REQUEST) -> None:
+    def __init__(
+            self, message: str, status_code: int = status.HTTP_422_UNPROCESSABLE_ENTITY
+    ) -> None:
         self.message = message
         self.status_code = status_code
 

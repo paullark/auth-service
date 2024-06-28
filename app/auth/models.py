@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 
 from bson import ObjectId
 from pydantic import BaseModel, Field, ConfigDict, Extra
@@ -42,3 +42,9 @@ class ListParams(BaseModel):
             "skip": self.skip,
             "limit": self.limit,
         }
+
+
+class Collection(StrEnum):
+    users = "users"
+    authorizations = "authorizations"
+    verifications = "verifications"

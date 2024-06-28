@@ -1,12 +1,25 @@
-from pydantic import Extra, ConfigDict
+from datetime import datetime
 
-from app.auth.models import BaseDocument
+from pydantic import Extra, ConfigDict, EmailStr
+
+from app.auth.models import BaseDocument, Collection
 
 
-class VerificationData(BaseDocument):
-    email: str
-    exp_delta: int
-    resend_delta: int
-    code: int
+class BaseVerification(BaseDocument):
+    email: EmailStr
+    exp_date: datetime
+    resend_date: datetime
 
     model_config = ConfigDict(extra=Extra.forbid)
+
+
+class Verification(BaseVerification):
+    code: str
+
+    @classmethod
+    def collection(cls):
+        return Collection.verifications
+
+
+class VerificationOut(BaseVerification):
+    pass

@@ -5,7 +5,7 @@ from app.auth.database.types import PyObjectId
 from app.auth.database.services import db
 
 from app.auth.models import ListParams
-from app.auth.users.models import User, UserCreate, UserUpdate, RoleType
+from app.auth.users.models import User, UserCreate, UserUpdate
 
 
 async def get_user(user_id: PyObjectId) -> User:

@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 
 from bson import ObjectId
-from fastapi import HTTPException
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pymongo import ReturnDocument
 
@@ -64,12 +63,16 @@ class Database:
         return type(document)(**res)
 
     async def delete[D](self, document: D) -> None:
-        res = await self.database[document.collection()].delete_one({"_id": ObjectId(document.id)})
+        res = await self.database[document.collection()].delete_one(
+            {"_id": ObjectId(document.id)}
+        )
 
         if res.deleted_count == 1:
             return None
 
-        raise DocumentNotFound(collection=document.collection(), query={"_id": document.id})
+        raise DocumentNotFound(
+            collection=document.collection(), query={"_id": document.id}
+        )
 
 
 db = Database(settings.mongo.url, settings.mongo.database_name)

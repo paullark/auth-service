@@ -1,12 +1,16 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Security
+from fastapi import APIRouter, Body, Security, BackgroundTasks
+from fastapi_mail import MessageSchema, MessageType, FastMail
 from starlette import status
 
 from app.auth.authentication.models import SignupData, LoginData, TokenData, TokenPair
-from app.auth.authentication.services import authenticate_user, get_token_data, refresh_token_pair, delete_authorization
+from app.auth.authentication.services import authenticate_user, get_token_data, refresh_token_pair, \
+    delete_authorization, signup_user
 from app.auth.users.models import User
 from app.auth.users.services import get_user
+from app.auth.verification.models import VerificationOut
+from app.auth.verification.services import send_email, conf
 
 auth = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -19,8 +23,8 @@ async def get_me(
 
 
 @auth.post("/signup")
-async def signup(signin: SignupData):
-    pass
+async def signup(background_tasks: BackgroundTasks, signin: SignupData) -> VerificationOut:
+    return await signup_user(background_tasks, signin)
 
 
 @auth.post("/login")

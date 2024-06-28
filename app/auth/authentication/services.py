@@ -10,12 +10,15 @@ from passlib.context import CryptContext
 from pydantic import ValidationError
 from starlette import status
 from app.auth.config import settings
-from app.auth.authentication.exceptions import PasswordError, TokenDataError, NotEnoughPermissionError
+from app.auth.authentication.exceptions import PasswordError, TokenDataError, NotEnoughPermissionError, \
+    AuthenticationError
 from app.auth.authentication.models import (
-    TokenPair, BaseTokenData, RoleType, TokenData, TokenType, Authorization
+    TokenPair, BaseTokenData, TokenData, TokenType, Authorization, SignupData
 )
 from app.auth.database.services import db
 from app.auth.users.models import User
+from app.auth.verification.models import VerificationOut
+from app.auth.verification.services import create_verification
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 status_401 = status.HTTP_401_UNAUTHORIZED
@@ -54,16 +57,16 @@ def create_token(data: BaseTokenData, token_type: TokenType, expires_in: int) ->
     )
 
     return jwt.encode(
-        token_data.dict(), settings.secret_key, algorithm=settings.signing_algorithm
+        token_data.dict(), settings.secret_key, algorithm=settings.auth.signing_algorithm
     )
 
 
 async def create_token_pair(data: BaseTokenData) -> TokenPair:
     access_token = create_token(
-        data, TokenType.access, settings.access_token_exp_minutes
+        data, TokenType.access, settings.auth.access_token_exp_minutes
     )
     refresh_token = create_token(
-        data, TokenType.refresh, settings.refresh_token_exp_minutes
+        data, TokenType.refresh, settings.auth.refresh_token_exp_minutes
     )
 
     return TokenPair(access_token=access_token, refresh_token=refresh_token)
@@ -73,7 +76,7 @@ def decode_token(token: str) -> TokenData:
     try:
         token_data = TokenData(
             **jwt.decode(
-                token, settings.secret_key, algorithms=["HS256"]
+                token, settings.secret_key, algorithms=[settings.auth.signing_algorithm]
             )
         )
     except ExpiredSignatureError:
@@ -121,3 +124,12 @@ async def refresh_token_pair(token: str) -> TokenPair:
 async def delete_authorization(token: str) -> None:
     authorization = await db.find(Authorization, {"refresh_token": token}, exception=True)
     await db.delete(authorization)
+
+
+async def signup_user(background_tasks, signup_data: SignupData) -> VerificationOut:
+    if user := await db.find(
+            User, {"username": signup_data.username, "email": signup_data.email}
+    ):
+        raise AuthenticationError(f"User {user.username} already exists.")
+
+    return await create_verification(background_tasks, signup_data.email)

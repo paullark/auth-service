@@ -1,10 +1,10 @@
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, ConfigDict, Extra
 
 from app.auth.database.types import PyObjectId
-from app.auth.models import BaseDocument
+from app.auth.models import BaseDocument, Collection
 from app.auth.users.models import RoleType
 
 
@@ -32,9 +32,11 @@ class BaseAuthData(BaseModel):
     username: str
     password: str
 
+    model_config = ConfigDict(extra=Extra.forbid)
+
 
 class SignupData(BaseAuthData):
-    email: str
+    email: EmailStr
 
 
 class LoginData(BaseAuthData):
@@ -47,4 +49,4 @@ class Authorization(BaseDocument):
 
     @classmethod
     def collection(cls) -> str:
-        return "authorization"
+        return Collection.authorizations
