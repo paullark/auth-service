@@ -1,16 +1,16 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Security, BackgroundTasks
-from fastapi_mail import MessageSchema, MessageType, FastMail
 from starlette import status
 
 from app.auth.authentication.models import SignupData, LoginData, TokenData, TokenPair
-from app.auth.authentication.services import authenticate_user, get_token_data, refresh_token_pair, \
-    delete_authorization, signup_user
+from app.auth.authentication.services import signup_user, login_user
+from app.auth.authentication.tokens.services import (
+    get_token_data, refresh_token_pair, delete_authorization
+)
 from app.auth.users.models import User
 from app.auth.users.services import get_user
 from app.auth.verification.models import VerificationOut
-from app.auth.verification.services import send_email, conf
 
 auth = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -29,7 +29,7 @@ async def signup(background_tasks: BackgroundTasks, signin: SignupData) -> Verif
 
 @auth.post("/login")
 async def login(login_data: LoginData) -> TokenPair:
-    return await authenticate_user(**login_data.dict())
+    return await login_user(**login_data.dict())
 
 
 @auth.post("/logout", status_code=status.HTTP_401_UNAUTHORIZED)

@@ -1,6 +1,7 @@
 from bson import ObjectId
+from pydantic import EmailStr
 
-from app.auth.authentication.services import get_password_hash
+from app.auth.authentication.utils import get_password_hash
 from app.auth.database.types import PyObjectId
 from app.auth.database.services import db
 
@@ -12,14 +13,18 @@ async def get_user(user_id: PyObjectId) -> User:
     return await db.find(User, {"_id": ObjectId(user_id)}, exception=True)
 
 
-async def get_user_by_name(username: str) -> User | None:
+async def get_user_by_name(username: str) -> User:
     return await db.find(
         User, {"username": {"$regex": username, "$options": "i"}}, exception=True
     )
 
 
+async def get_user_by_email(email: EmailStr) -> User:
+    return await db.find(User, {"email": email}, exception=True)
+
+
 async def get_user_list(
-        username: str | None, email: str | None, params: ListParams
+        username: str | None, email: EmailStr | None, params: ListParams
 ) -> list[User]:
     query = (
         {"username": {"$regex": username, "$options": "i"}} if username else {} |

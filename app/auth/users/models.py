@@ -20,6 +20,7 @@ class BaseUser(BaseModel):
 
 
 class User(BaseUser, BaseDocument):
+    is_active: bool = False
 
     @classmethod
     def collection(cls):
@@ -35,5 +36,6 @@ class UserUpdate(BaseModel):
     password: str | None = None
     email: EmailStr | None = None
     roles: list[RoleType] | None = None
+    is_active: bool | None = None
 
     model_config = ConfigDict(extra=Extra.forbid)

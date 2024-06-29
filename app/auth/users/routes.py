@@ -1,17 +1,21 @@
 from typing import Annotated
 
-import jwt
 from fastapi import APIRouter, Depends, Security
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
+from pydantic import EmailStr
 from starlette import status
 
-from app.auth.authentication.models import TokenData
-from app.auth.authentication.services import get_token_data
-from app.auth.config import settings
+from app.auth.authentication.tokens.services import get_token_data
 from app.auth.models import ListParams
 from app.auth.users.models import User, UserCreate, UserUpdate
-from app.auth.users.services import get_user, create_user, get_user_by_name, get_user_list, update_user, delete_user
+from app.auth.users.services import (
+    get_user,
+    create_user,
+    get_user_by_name,
+    get_user_list,
+    update_user,
+    delete_user,
+    get_user_by_email
+)
 
 users = APIRouter(
     prefix="/users", tags=["Users"], dependencies=[Security(get_token_data, scopes=["admin"])]
@@ -19,12 +23,17 @@ users = APIRouter(
 
 
 @users.get("/{user_id}")
-async def get_user_route(user: Annotated[User, Depends(get_user)]) -> User | None:
+async def get_user_route(user: Annotated[User, Depends(get_user)]) -> User:
     return user
 
 
 @users.get("/username/{username}")
-async def get_user_by_name_route(user: Annotated[User, Depends(get_user_by_name)]) -> User | None:
+async def get_user_by_name_route(user: Annotated[User, Depends(get_user_by_name)]) -> User:
+    return user
+
+
+@users.get("/email/{email}")
+async def get_user_by_email_route(user: Annotated[User, Depends(get_user_by_email)]) -> User:
     return user
 
 
@@ -32,7 +41,7 @@ async def get_user_by_name_route(user: Annotated[User, Depends(get_user_by_name)
 async def get_user_list_route(
         params: Annotated[ListParams, Depends()],
         username: str | None = None,
-        email: str | None = None
+        email: EmailStr | None = None
 ) -> list[User]:
     return await get_user_list(username, email, params)
 

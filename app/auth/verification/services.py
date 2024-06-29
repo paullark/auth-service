@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 from starlette import status
 
-from app.auth.authentication.models import TokenPair
+from app.auth.authentication.services import authenticate_user
 from app.auth.config import settings
 from fastapi import BackgroundTasks
 from fastapi_mail import ConnectionConfig, MessageSchema, MessageType, FastMail
@@ -12,6 +12,7 @@ from pydantic import EmailStr
 
 from app.auth.database.services import db
 from app.auth.database.types import PyObjectId
+from app.auth.users.services import get_user_by_email
 from app.auth.verification.exceptions import VerificationError
 from app.auth.verification.models import VerificationOut, Verification, BaseVerification
 
@@ -46,7 +47,7 @@ def generate_verification_code() -> str:
     return "".join(random.sample("0123456789", settings.auth.verification_code_length))
 
 
-async def create_verification(background_tasks, email: str) -> VerificationOut:
+async def create_verification(background_tasks, email: EmailStr) -> VerificationOut:
     verification_data = BaseVerification(
         email=email,
         exp_date=datetime.now(timezone.utc) + timedelta(
@@ -87,4 +88,7 @@ async def confirm_verification(verification_id: PyObjectId, code: str):
             "Resend time is not expired.", status.HTTP_422_UNPROCESSABLE_ENTITY
         )
 
+    user = await get_user_by_email(verification.email)
+    user.is_active = True
 
+    return await authenticate_user(await db.replace(user))
