@@ -83,7 +83,7 @@ async def refresh_token_pair(token: str) -> TokenPair:
 
     user = await db.find(User, {"_id": ObjectId(token_data.user_id)}, exception=True)
     authorization = await db.find(Authorization, {"refresh_token": token}, exception=True)
-    token_pair = await create_token_pair(
+    token_pair = create_token_pair(
         BaseTokenData(user_id=user.id, scopes=user.roles)
     )
     authorization.refresh_token = token_pair.refresh_token

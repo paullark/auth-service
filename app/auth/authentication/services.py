@@ -8,7 +8,7 @@ from app.auth.database.services import db
 from app.auth.users.models import User, UserCreate, RoleType
 from app.auth.users.services import create_user
 from app.auth.verification.models import VerificationOut
-from app.auth.verification.services import create_verification
+from app.auth.verification.services import create_or_update_verification
 
 
 async def signup_user(background_tasks, signup_data: SignupData) -> VerificationOut:
@@ -21,7 +21,7 @@ async def signup_user(background_tasks, signup_data: SignupData) -> Verification
     else:
         await create_user(UserCreate(**signup_data.dict(), roles=[RoleType.user]))
 
-    return await create_verification(background_tasks, signup_data.email)
+    return await create_or_update_verification(background_tasks, signup_data.email)
 
 
 async def login_user(username: str, password: str) -> TokenPair:

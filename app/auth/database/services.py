@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC, timedelta
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
@@ -38,7 +38,9 @@ class Database:
         return [model(**document) async for document in documents]
 
     async def insert[D](self, document: D) -> D:
-        document.created = datetime.now(timezone.utc)
+        document.created = datetime.now(UTC)
+        if not isinstance(document.id, ObjectId):
+            document.id = ObjectId(document.id)
         res = await self.database[document.collection()].insert_one(
             document.dict(by_alias=True)
         )
@@ -51,16 +53,18 @@ class Database:
         document_dict.update(
             {
                 "_id": ObjectId(document_dict["_id"]),
-                "updated": datetime.now(timezone.utc)
+                "updated": datetime.now(UTC)
             }
         )
-        res = await self.database[document.collection()].find_one_and_replace(
-            {"_id": ObjectId(document.id)},
+        query: dict[str, ObjectId] = {"_id": ObjectId(document.id)}
+        if res := await self.database[document.collection()].find_one_and_replace(
+            query,
             document_dict,
             return_document=ReturnDocument.AFTER
-        )
+        ):
+            return type(document)(**res)
 
-        return type(document)(**res)
+        raise DocumentNotFound(collection=document.collection(), query=query)
 
     async def delete[D](self, document: D) -> None:
         res = await self.database[document.collection()].delete_one(

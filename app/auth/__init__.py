@@ -5,7 +5,7 @@ from pydantic import ValidationError
 from starlette import status
 
 from app.auth.authentication.exceptions import (
-    PasswordError, TokenDataError, NotEnoughPermissionError
+    PasswordError, TokenDataError, NotEnoughPermissionError, AuthenticationError
 )
 from app.auth.authentication.routes import auth
 from app.auth.config import settings
@@ -14,9 +14,12 @@ from app.auth.exceptions import (
     pydantic_validation_exception_handler, exception_handler, ExceptionHandlersAlias
 )
 from app.auth.users.routes import users
+from app.auth.verification.exceptions import VerificationError
 from app.auth.verification.routes import verification
 
 exception_handlers: ExceptionHandlersAlias = {
+    AuthenticationError: exception_handler,
+    VerificationError: exception_handler,
     ValidationError: pydantic_validation_exception_handler,
     PasswordError: exception_handler,
     TokenDataError: exception_handler,

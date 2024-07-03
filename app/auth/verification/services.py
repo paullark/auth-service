@@ -1,5 +1,5 @@
 import random
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, UTC
 
 from bson import ObjectId
 from starlette import status
@@ -47,16 +47,38 @@ def generate_verification_code() -> str:
     return "".join(random.sample("0123456789", settings.auth.verification_code_length))
 
 
-async def create_verification(background_tasks, email: EmailStr) -> VerificationOut:
+async def create_or_update_verification(background_tasks, email: EmailStr) -> VerificationOut:
+    exp_date = datetime.now(UTC) + timedelta(
+        minutes=settings.auth.verification_exp_minutes
+    )
+    resend_date = datetime.now(UTC) + timedelta(
+        minutes=settings.auth.verification_resend_minutes
+    )
+
+    if verification := await db.find(Verification, {"email": email}):
+
+        if datetime.utcnow() < verification.resend_date:
+            raise VerificationError(
+                "Resend time is not expired.", status.HTTP_422_UNPROCESSABLE_ENTITY
+            )
+
+        verification = await db.replace(
+            verification.copy(
+                update={
+                    "code": generate_verification_code(),
+                    "exp_date": exp_date,
+                    "resend_date": resend_date
+                }
+            )
+        )
+        send_email(background_tasks, verification.email, verification.code)
+        return VerificationOut(**verification.dict(exclude={"code"}))
+
     verification_data = BaseVerification(
         email=email,
-        exp_date=datetime.now(timezone.utc) + timedelta(
-            minutes=settings.auth.verification_exp_minutes
-        ),
-        resend_date=datetime.now(timezone.utc) + timedelta(
-            minutes=settings.auth.verification_resend_minutes
-        ),
-        created=datetime.now(timezone.utc)
+        exp_date=exp_date,
+        resend_date=resend_date,
+        created=datetime.now(UTC)
     )
 
     verification = Verification(**verification_data.dict(), code=generate_verification_code())
@@ -67,25 +89,18 @@ async def create_verification(background_tasks, email: EmailStr) -> Verification
 
 
 async def confirm_verification(verification_id: PyObjectId, code: str):
-    verification = db.find(Verification, {"_id": ObjectId(verification_id)}, exception=True)
+    verification = await db.find(
+        Verification, {"_id": ObjectId(verification_id)}, exception=True
+    )
 
-    if verification.code != code:
-        raise VerificationError(
-            "Incorrect verification code.", status.HTTP_401_UNAUTHORIZED
-        )
-
-    if datetime.now(timezone.utc) > verification.exp_date:
+    if datetime.utcnow() > verification.exp_date:
         raise VerificationError(
             "Verification code expired.", status.HTTP_401_UNAUTHORIZED
         )
 
-    if verification.updated and datetime.now(timezone.utc) < verification.updated:
+    if verification.code != code:
         raise VerificationError(
-            "Resend time is not expired.", status.HTTP_422_UNPROCESSABLE_ENTITY
-        )
-    elif datetime.now(timezone.utc) < verification.created:
-        raise VerificationError(
-            "Resend time is not expired.", status.HTTP_422_UNPROCESSABLE_ENTITY
+            "Incorrect verification code.", status.HTTP_401_UNAUTHORIZED
         )
 
     user = await get_user_by_email(verification.email)
