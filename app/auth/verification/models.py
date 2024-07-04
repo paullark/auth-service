@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import Extra, ConfigDict, EmailStr
+from pydantic import ConfigDict, EmailStr
 
 from app.auth.models import BaseDocument, Collection
 
@@ -10,7 +10,7 @@ class BaseVerification(BaseDocument):
     exp_date: datetime
     resend_date: datetime
 
-    model_config = ConfigDict(extra=Extra.forbid)
+    model_config = ConfigDict(extra="forbid")
 
 
 class Verification(BaseVerification):

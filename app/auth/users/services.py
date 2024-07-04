@@ -34,13 +34,13 @@ async def get_user_list(
 
 
 async def create_user(user: UserCreate) -> User:
-    user = User(**user.dict())
-    return await db.insert(user.copy(update={"password": get_password_hash(user.password)}))
+    user = User(**user.model_dump())
+    return await db.insert(user.model_copy(update={"password": get_password_hash(user.password)}))
 
 
 async def update_user(user: User, update: UserUpdate) -> User:
-    update_dict = update.dict(exclude_unset=True)
-    updated_user = user.copy(update=update_dict)
+    update_dict = update.model_dump(exclude_none=True)
+    updated_user = user.model_copy(update=update_dict)
     user = await db.replace(updated_user)
     return user
 

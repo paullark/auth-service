@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, EmailStr, ConfigDict, Extra
+from pydantic import BaseModel, EmailStr, ConfigDict
 
 from app.auth.database.types import PyObjectId
 from app.auth.models import BaseDocument, Collection
@@ -32,7 +32,7 @@ class BaseAuthData(BaseModel):
     username: str
     password: str
 
-    model_config = ConfigDict(extra=Extra.forbid)
+    model_config = ConfigDict(extra="forbid")
 
 
 class SignupData(BaseAuthData):

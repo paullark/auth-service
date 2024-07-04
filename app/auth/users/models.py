@@ -1,7 +1,8 @@
 from enum import StrEnum
 
-from pydantic import BaseModel, Extra, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.auth.config import settings
 from app.auth.models import BaseDocument, Collection
 
 
@@ -12,11 +13,11 @@ class RoleType(StrEnum):
 
 class BaseUser(BaseModel):
     username: str
-    password: str
+    password: str = Field(min_length=settings.auth.password_min_length)
     email: EmailStr
     roles: list[RoleType]
 
-    model_config = ConfigDict(extra=Extra.forbid)
+    model_config = ConfigDict(extra="forbid")
 
 
 class User(BaseUser, BaseDocument):
@@ -38,4 +39,4 @@ class UserUpdate(BaseModel):
     roles: list[RoleType] | None = None
     is_active: bool | None = None
 
-    model_config = ConfigDict(extra=Extra.forbid)
+    model_config = ConfigDict(extra="forbid")

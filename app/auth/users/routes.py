@@ -59,6 +59,6 @@ async def update_user_route(
     return await update_user(user, user_update)
 
 
-@users.delete("/delete", status_code=status.HTTP_204_NO_CONTENT)
+@users.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user_route(user: Annotated[User, Depends(get_user)]) -> None:
     return await delete_user(user)
