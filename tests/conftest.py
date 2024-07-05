@@ -1,23 +1,19 @@
-import asyncio
 from datetime import datetime, UTC, timedelta
 from typing import AsyncGenerator
 
 import jwt
 import pytest
-from asgi_lifespan import LifespanManager
 from bson import ObjectId
 from httpx import AsyncClient, Headers
 
-from app.auth.authentication.models import LoginData
-from app.auth.authentication.tokens.models import TokenPair, TokenData, BaseTokenData
-from app.auth.authentication.tokens.services import authenticate_user
-from app.auth.authentication.utils import pwd_context, get_password_hash
+from app.auth.authentication.tokens.models import TokenPair, TokenData
+from app.auth.authentication.utils import get_password_hash
 from app.auth.database.services import Database
 from app.auth.database.services import db as database
 from app.auth import app as main_app
+from app.auth.config import settings
 from app.auth.database.types import PyObjectId
 from app.auth.users.models import User, UserCreate, UserUpdate
-from app.auth.users.services import create_user
 
 
 @pytest.fixture
@@ -37,7 +33,12 @@ async def password() -> str:
 
 @pytest.fixture
 async def secret_key() -> str:
-    return "60768709b48691e3222d8e3100cb7bd83e208919958302f3ec01d3eedb39c398"
+    return settings.secret_key
+
+
+@pytest.fixture
+async def algorithm() -> str:
+    return "HS256"
 
 
 @pytest.fixture
@@ -57,31 +58,28 @@ async def user(password: str, db: Database) -> User:
 
 @pytest.fixture
 async def user_token_pair(user: User, secret_key: str) -> TokenPair:
-    # t = TokenPair(
-    #     access_token=jwt.encode(
-    #         TokenData(
-    #             user_id=PyObjectId(user.id),
-    #             scopes=user.roles,
-    #             token_type="access",
-    #             exp=datetime.now(UTC) + timedelta(minutes=1)
-    #         ).dict(),
-    #         secret_key,
-    #         algorithm="HS256"
-    #     ),
-    #     refresh_token=jwt.encode(
-    #         TokenData(
-    #             user_id=PyObjectId(user.id),
-    #             scopes=user.roles,
-    #             token_type="refresh",
-    #             exp=datetime.now(UTC) + timedelta(minutes=5)
-    #         ).dict(),
-    #         secret_key,
-    #         algorithm="HS256"
-    #     ),
-    # )
-    # print(t)
-    # return t
-    return await authenticate_user(user)
+    return TokenPair(
+        access_token=jwt.encode(
+            TokenData(
+                user_id=PyObjectId(user.id),
+                scopes=user.roles,
+                token_type="access",
+                exp=datetime.now(UTC) + timedelta(minutes=1)
+            ).dict(),
+            secret_key,
+            algorithm="HS256"
+        ),
+        refresh_token=jwt.encode(
+            TokenData(
+                user_id=PyObjectId(user.id),
+                scopes=user.roles,
+                token_type="refresh",
+                exp=datetime.now(UTC) + timedelta(minutes=5)
+            ).dict(),
+            secret_key,
+            algorithm="HS256"
+        ),
+    )
 
 
 @pytest.fixture
@@ -101,31 +99,29 @@ async def admin(password: str, db: Database) -> User:
 
 @pytest.fixture
 async def admin_token_pair(admin: User, secret_key: str) -> TokenPair:
-    # t = TokenPair(
-    #     access_token=jwt.encode(
-    #         TokenData(
-    #             user_id=PyObjectId(admin.id),
-    #             scopes=admin.roles,
-    #             token_type="access",
-    #             exp=datetime.now(UTC) + timedelta(minutes=1)
-    #         ).dict(),
-    #         secret_key,
-    #         algorithm="HS256"
-    #     ),
-    #     refresh_token=jwt.encode(
-    #         TokenData(
-    #             user_id=PyObjectId(admin.id),
-    #             scopes=admin.roles,
-    #             token_type="refresh",
-    #             exp=datetime.now(UTC) + timedelta(minutes=5)
-    #         ).dict(),
-    #         secret_key,
-    #         algorithm="HS256"
-    #     ),
-    # )
-    # print(t)
-    # return t
-    return await authenticate_user(admin)
+    return TokenPair(
+        access_token=jwt.encode(
+            TokenData(
+                user_id=PyObjectId(admin.id),
+                scopes=admin.roles,
+                token_type="access",
+                exp=datetime.now(UTC) + timedelta(minutes=1)
+            ).dict(),
+            secret_key,
+            algorithm="HS256"
+        ),
+        refresh_token=jwt.encode(
+            TokenData(
+                user_id=PyObjectId(admin.id),
+                scopes=admin.roles,
+                token_type="refresh",
+                exp=datetime.now(UTC) + timedelta(minutes=5)
+            ).dict(),
+            secret_key,
+            algorithm="HS256"
+        ),
+    )
+
 
 @pytest.fixture
 async def app(db: Database) -> AsyncGenerator[AsyncClient, None]:
@@ -140,14 +136,6 @@ async def admin_app(
     async with AsyncClient(app=main_app, base_url="http://test") as client:
         client.headers = Headers({"Authorization": f"Bearer {admin_token_pair.access_token}"})
         yield client
-
-
-# @pytest.fixture
-# def event_loop():
-#     policy = asyncio.get_event_loop_policy()
-#     loop = policy.new_event_loop()
-#     yield loop
-#     loop.close()
 
 
 @pytest.fixture

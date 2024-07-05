@@ -27,7 +27,8 @@ def create_token(data: BaseTokenData, token_type: TokenType, expires_in: int) ->
         token_type=token_type,
         exp=datetime.now(timezone.utc) + timedelta(minutes=expires_in)
     )
-
+    print("****")
+    print("*", settings.secret_key)
     return jwt.encode(
         token_data.dict(), settings.secret_key, algorithm=settings.auth.signing_algorithm
     )
