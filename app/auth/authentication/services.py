@@ -1,9 +1,10 @@
 from starlette import status
 
+from app.auth.authentication.tokens.models import TokenPair
 from app.auth.authentication.tokens.services import authenticate_user
 from app.auth.authentication.utils import verify_password
 from app.auth.authentication.exceptions import PasswordError, AuthenticationError
-from app.auth.authentication.models import TokenPair, SignupData
+from app.auth.authentication.models import SignupData
 from app.auth.database.services import db
 from app.auth.users.models import User, UserCreate, RoleType
 from app.auth.users.services import create_user

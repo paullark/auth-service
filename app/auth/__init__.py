@@ -1,5 +1,3 @@
-from typing import Annotated
-
 from fastapi import FastAPI
 from pydantic import ValidationError
 from starlette import status

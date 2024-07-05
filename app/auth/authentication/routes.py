@@ -3,7 +3,8 @@ from typing import Annotated
 from fastapi import APIRouter, Body, Security, BackgroundTasks
 from starlette import status
 
-from app.auth.authentication.models import SignupData, LoginData, TokenData, TokenPair
+from app.auth.authentication.models import SignupData, LoginData
+from app.auth.authentication.tokens.models import TokenData, TokenPair
 from app.auth.authentication.services import signup_user, login_user
 from app.auth.authentication.tokens.services import (
     get_token_data, refresh_token_pair, delete_authorization

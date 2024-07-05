@@ -9,10 +9,11 @@ from jwt import ExpiredSignatureError
 from pydantic import ValidationError
 from starlette import status
 
+from app.auth.authentication.models import Authorization
 from app.auth.config import settings
 from app.auth.authentication.exceptions import TokenDataError, NotEnoughPermissionError
-from app.auth.authentication.models import (
-    TokenPair, BaseTokenData, TokenData, TokenType, Authorization
+from app.auth.authentication.tokens.models import (
+    TokenPair, BaseTokenData, TokenData, TokenType
 )
 from app.auth.database.services import db
 from app.auth.users.models import User

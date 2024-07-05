@@ -8,7 +8,8 @@ from asgi_lifespan import LifespanManager
 from bson import ObjectId
 from httpx import AsyncClient, Headers
 
-from app.auth.authentication.models import LoginData, TokenPair, TokenData, BaseTokenData
+from app.auth.authentication.models import LoginData
+from app.auth.authentication.tokens.models import TokenPair, TokenData, BaseTokenData
 from app.auth.authentication.tokens.services import authenticate_user
 from app.auth.authentication.utils import pwd_context, get_password_hash
 from app.auth.database.services import Database
