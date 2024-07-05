@@ -6,6 +6,7 @@ import pytest
 from bson import ObjectId
 from httpx import AsyncClient, Headers
 
+from app.auth.authentication.models import SignupData, LoginData, Authorization
 from app.auth.authentication.tokens.models import TokenPair, TokenData
 from app.auth.authentication.utils import get_password_hash
 from app.auth.database.services import Database
@@ -14,6 +15,7 @@ from app.auth import app as main_app
 from app.auth.config import settings
 from app.auth.database.types import PyObjectId
 from app.auth.users.models import User, UserCreate, UserUpdate
+from app.auth.verification.models import Verification
 
 
 @pytest.fixture
@@ -57,8 +59,8 @@ async def user(password: str, db: Database) -> User:
 
 
 @pytest.fixture
-async def user_token_pair(user: User, secret_key: str) -> TokenPair:
-    return TokenPair(
+async def user_token_pair(user: User, secret_key: str, db: Database) -> TokenPair:
+    token_pair = TokenPair(
         access_token=jwt.encode(
             TokenData(
                 user_id=PyObjectId(user.id),
@@ -80,6 +82,12 @@ async def user_token_pair(user: User, secret_key: str) -> TokenPair:
             algorithm="HS256"
         ),
     )
+    await db.insert(
+        Authorization(
+            user_id=ObjectId(user.id), refresh_token=token_pair.refresh_token
+        )
+    )
+    return token_pair
 
 
 @pytest.fixture
@@ -98,8 +106,8 @@ async def admin(password: str, db: Database) -> User:
 
 
 @pytest.fixture
-async def admin_token_pair(admin: User, secret_key: str) -> TokenPair:
-    return TokenPair(
+async def admin_token_pair(admin: User, secret_key: str, db: Database) -> TokenPair:
+    token_pair = TokenPair(
         access_token=jwt.encode(
             TokenData(
                 user_id=PyObjectId(admin.id),
@@ -121,6 +129,12 @@ async def admin_token_pair(admin: User, secret_key: str) -> TokenPair:
             algorithm="HS256"
         ),
     )
+    await db.insert(
+        Authorization(
+            user_id=ObjectId(admin.id), refresh_token=token_pair.refresh_token
+        )
+    )
+    return token_pair
 
 
 @pytest.fixture
@@ -139,6 +153,15 @@ async def admin_app(
 
 
 @pytest.fixture
+async def user_app(
+        db: Database, user_token_pair: TokenPair
+) -> AsyncGenerator[AsyncClient, None]:
+    async with AsyncClient(app=main_app, base_url="http://test") as client:
+        client.headers = Headers({"Authorization": f"Bearer {user_token_pair.access_token}"})
+        yield client
+
+
+@pytest.fixture
 async def user_create(password: str) -> UserCreate:
     return UserCreate(
         username="admin",
@@ -151,3 +174,30 @@ async def user_create(password: str) -> UserCreate:
 @pytest.fixture
 async def user_update_roles() -> UserUpdate:
     return UserUpdate(roles=["admin"])
+
+
+@pytest.fixture
+async def signup_data(password: str) -> SignupData:
+    return SignupData(
+        username="user_in",
+        password=password,
+        email="test@test.com"
+    )
+
+
+@pytest.fixture
+async def login_data(user: User) -> LoginData:
+    return LoginData(username=user.username, password="27.:^:.Cl")
+
+
+@pytest.fixture
+async def verification(db: Database, user: User) -> Verification:
+    verification = Verification(
+        email=user.email,
+        exp_date=datetime.now(UTC) + timedelta(minutes=1),
+        resend_date=datetime.now(UTC) + timedelta(minutes=1),
+        created=datetime.now(UTC),
+        code="123456"
+    )
+    await db.insert(verification)
+    return verification

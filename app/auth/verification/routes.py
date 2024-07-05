@@ -8,5 +8,7 @@ verification = APIRouter(prefix="/verification", tags=["Verification"])
 
 
 @verification.post("/confirm/{verification_id}")
-async def confirm(verification_id: PyObjectId, code: str = Body(embed=True)) -> TokenPair:
+async def confirm(
+        verification_id: PyObjectId, code: str = Body(embed=True)
+) -> TokenPair:
     return await confirm_verification(verification_id, code)

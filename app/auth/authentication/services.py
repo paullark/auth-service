@@ -12,9 +12,16 @@ from app.auth.verification.models import VerificationOut
 from app.auth.verification.services import create_or_update_verification
 
 
-async def signup_user(background_tasks, signup_data: SignupData) -> VerificationOut:
+async def signup_user(
+        background_tasks, signup_data: SignupData
+) -> VerificationOut:
     if user := await db.find(
-            User, {"username": signup_data.username, "email": signup_data.email}
+            User,
+            {
+                "$or": [
+                    {"username": signup_data.username}, {"email": signup_data.email}
+                ]
+            }
     ):
         if user.is_active:
             raise AuthenticationError(f"User {user.username} already exists.")
