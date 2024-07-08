@@ -1,3 +1,4 @@
+import asyncio
 import random
 from datetime import datetime, timezone, timedelta, UTC
 
@@ -29,9 +30,7 @@ conf = ConnectionConfig(
 )
 
 
-def send_email(
-        background_tasks: BackgroundTasks, email: EmailStr, code: str
-) -> None:
+async def send_email(email: EmailStr, code: str) -> None:
     message = MessageSchema(
         subject="Pau App Verification Code",
         recipients=[email],
@@ -40,14 +39,14 @@ def send_email(
     )
 
     fast_mail = FastMail(conf)
-    background_tasks.add_task(fast_mail.send_message, message, None)
+    await fast_mail.send_message(message)
 
 
 def generate_verification_code() -> str:
     return "".join(random.sample("0123456789", settings.auth.verification_code_length))
 
 
-async def create_or_update_verification(background_tasks, email: EmailStr) -> VerificationOut:
+async def create_or_update_verification(email: EmailStr) -> VerificationOut:
     exp_date = datetime.now(UTC) + timedelta(
         minutes=settings.auth.verification_exp_minutes
     )
@@ -71,7 +70,8 @@ async def create_or_update_verification(background_tasks, email: EmailStr) -> Ve
                 }
             )
         )
-        send_email(background_tasks, verification.email, verification.code)
+        await asyncio.create_task(send_email(verification.email, verification.code))
+
         return VerificationOut(**verification.dict(exclude={"code"}))
 
     verification_data = BaseVerification(
@@ -83,7 +83,7 @@ async def create_or_update_verification(background_tasks, email: EmailStr) -> Ve
 
     verification = Verification(**verification_data.dict(), code=generate_verification_code())
     await db.insert(verification)
-    send_email(background_tasks, verification.email, verification.code)
+    await asyncio.create_task(send_email(verification.email, verification.code))
 
     return VerificationOut(**verification_data.dict())
 

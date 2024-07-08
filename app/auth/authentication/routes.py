@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Security, BackgroundTasks
+from fastapi import APIRouter, Body, Security
 from starlette import status
 
 from app.auth.authentication.models import SignupData, LoginData
@@ -16,16 +16,9 @@ from app.auth.verification.models import VerificationOut
 auth = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@auth.get("/me")
-async def get_me(
-        claims: Annotated[TokenData, Security(get_token_data, scopes=["user"])]
-) -> User:
-    return await get_user(claims.user_id)
-
-
 @auth.post("/signup")
-async def signup(background_tasks: BackgroundTasks, signin: SignupData) -> VerificationOut:
-    return await signup_user(background_tasks, signin)
+async def signup(signin: SignupData) -> VerificationOut:
+    return await signup_user(signin)
 
 
 @auth.post("/login")
