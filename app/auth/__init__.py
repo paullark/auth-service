@@ -11,6 +11,7 @@ from app.auth.database.exceptions import DocumentNotFound, document_not_found_ex
 from app.auth.exceptions import (
     pydantic_validation_exception_handler, exception_handler, ExceptionHandlersAlias
 )
+from app.auth.users.profiles.routes import profiles
 from app.auth.users.routes import users
 from app.auth.verification.exceptions import VerificationError
 from app.auth.verification.routes import verification
@@ -33,6 +34,7 @@ app = FastAPI(
 app.include_router(users)
 app.include_router(auth)
 app.include_router(verification)
+app.include_router(profiles)
 
 
 @app.get("/health-check", status_code=status.HTTP_204_NO_CONTENT)

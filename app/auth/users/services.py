@@ -1,6 +1,11 @@
+from typing import Annotated
+
 from bson import ObjectId
+from fastapi import Security
 from pydantic import EmailStr
 
+from app.auth.authentication.tokens.models import TokenData
+from app.auth.authentication.tokens.services import get_token_data
 from app.auth.authentication.utils import get_password_hash
 from app.auth.database.types import PyObjectId
 from app.auth.database.services import db
@@ -47,3 +52,6 @@ async def update_user(user: User, update: UserUpdate) -> User:
 
 async def delete_user(user: User) -> None:
     await db.delete(user)
+
+
+CurrentUser = Annotated[TokenData, Security(get_token_data, scopes=["user"])]
