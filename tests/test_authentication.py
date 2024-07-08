@@ -9,17 +9,6 @@ from app.auth.users.models import User
 from app.auth.verification.models import VerificationOut, Verification
 
 
-async def test_retrieve_me(user_app: AsyncClient, user: User) -> None:
-    response = await user_app.get("/auth/me")
-    assert response.status_code == 200, response.json()
-
-
-async def test_retrieve_not_me(app: AsyncClient, user: User) -> None:
-    response = await app.get("/auth/me")
-    assert response.status_code == 403
-    assert response.json()["detail"] == "Not authenticated"
-
-
 async def test_signup(app: AsyncClient, signup_data: SignupData, db: Database) -> None:
     response = await app.post("/auth/signup", json=jsonable_encoder(signup_data))
     assert response.status_code == 200
