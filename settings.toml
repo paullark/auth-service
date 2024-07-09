@@ -6,10 +6,10 @@ allow_origins = ["*"]
 [default.auth]
 password_min_length = 9
 signing_algorithm = "HS256"
-access_token_exp_minutes = 500000
-refresh_token_exp_minutes = 6000000
-verification_exp_minutes = 5
-verification_resend_minutes = 5
+access_token_exp_minutes = 10
+refresh_token_exp_minutes = 10080
+verification_exp_minutes = 2
+verification_resend_minutes = 3
 verification_code_length = 6
 
 [default.mongo]
