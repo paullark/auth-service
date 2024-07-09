@@ -5,6 +5,7 @@ import jwt
 import pytest
 from bson import ObjectId
 from httpx import AsyncClient, Headers
+from pydantic import EmailStr
 
 from app.auth.authentication.models import SignupData, LoginData, Authorization
 from app.auth.authentication.tokens.models import TokenPair, TokenData
@@ -15,7 +16,7 @@ from app.auth import app as main_app
 from app.auth.config import settings
 from app.auth.database.types import PyObjectId
 from app.auth.users.models import User, UserCreate, UserUpdate
-from app.auth.verification.models import Verification
+from app.auth.verification.models import Verification, VerificationAction, ActionType
 
 
 @pytest.fixture
@@ -29,8 +30,28 @@ async def db() -> Database:
 
 
 @pytest.fixture
-async def password() -> str:
-    return get_password_hash("27.:^:.Cl")
+def email() -> EmailStr:
+    return "test@test.com"
+
+
+@pytest.fixture
+def new_email() -> EmailStr:
+    return "test2@test.com"
+
+
+@pytest.fixture
+async def plain_password() -> str:
+    return "27.:^:.Cl"
+
+
+@pytest.fixture
+async def new_plain_password() -> str:
+    return "27.:^:.Cl!"
+
+
+@pytest.fixture
+async def password(plain_password: str) -> str:
+    return get_password_hash(plain_password)
 
 
 @pytest.fixture
@@ -44,13 +65,13 @@ async def algorithm() -> str:
 
 
 @pytest.fixture
-async def user(password: str, db: Database) -> User:
+async def user(password: str, db: Database, email: EmailStr) -> User:
     user = await db.insert(
         User(
             id=ObjectId(),
             username="user",
             password=password,
-            email="test@test.com",
+            email=email,
             roles=["user"],
             is_active=True
         )
@@ -59,7 +80,9 @@ async def user(password: str, db: Database) -> User:
 
 
 @pytest.fixture
-async def user_token_pair(user: User, secret_key: str, db: Database) -> TokenPair:
+async def user_token_pair(
+        user: User, secret_key: str, db: Database, algorithm: str
+) -> TokenPair:
     token_pair = TokenPair(
         access_token=jwt.encode(
             TokenData(
@@ -69,7 +92,7 @@ async def user_token_pair(user: User, secret_key: str, db: Database) -> TokenPai
                 exp=datetime.now(UTC) + timedelta(minutes=1)
             ).dict(),
             secret_key,
-            algorithm="HS256"
+            algorithm=algorithm
         ),
         refresh_token=jwt.encode(
             TokenData(
@@ -79,7 +102,7 @@ async def user_token_pair(user: User, secret_key: str, db: Database) -> TokenPai
                 exp=datetime.now(UTC) + timedelta(minutes=5)
             ).dict(),
             secret_key,
-            algorithm="HS256"
+            algorithm=algorithm
         ),
     )
     await db.insert(
@@ -91,13 +114,13 @@ async def user_token_pair(user: User, secret_key: str, db: Database) -> TokenPai
 
 
 @pytest.fixture
-async def admin(password: str, db: Database) -> User:
+async def admin(password: str, db: Database, email: EmailStr) -> User:
     admin = await db.insert(
         User(
             id=ObjectId(),
             username="admin",
             password=password,
-            email="test@test.com",
+            email=email,
             roles=["user", "admin"],
             is_active=True
         )
@@ -106,7 +129,9 @@ async def admin(password: str, db: Database) -> User:
 
 
 @pytest.fixture
-async def admin_token_pair(admin: User, secret_key: str, db: Database) -> TokenPair:
+async def admin_token_pair(
+        admin: User, secret_key: str, db: Database, algorithm: str
+) -> TokenPair:
     token_pair = TokenPair(
         access_token=jwt.encode(
             TokenData(
@@ -116,7 +141,7 @@ async def admin_token_pair(admin: User, secret_key: str, db: Database) -> TokenP
                 exp=datetime.now(UTC) + timedelta(minutes=1)
             ).dict(),
             secret_key,
-            algorithm="HS256"
+            algorithm=algorithm
         ),
         refresh_token=jwt.encode(
             TokenData(
@@ -126,7 +151,7 @@ async def admin_token_pair(admin: User, secret_key: str, db: Database) -> TokenP
                 exp=datetime.now(UTC) + timedelta(minutes=5)
             ).dict(),
             secret_key,
-            algorithm="HS256"
+            algorithm=algorithm
         ),
     )
     await db.insert(
@@ -162,11 +187,11 @@ async def user_app(
 
 
 @pytest.fixture
-async def user_create(password: str) -> UserCreate:
+async def user_create(password: str, email: EmailStr) -> UserCreate:
     return UserCreate(
         username="admin",
         password=password,
-        email="test@test.com",
+        email=email,
         roles=["user"]
     )
 
@@ -177,27 +202,67 @@ async def user_update_roles() -> UserUpdate:
 
 
 @pytest.fixture
-async def signup_data(password: str) -> SignupData:
+async def signup_data(password: str, email: EmailStr) -> SignupData:
     return SignupData(
         username="user_in",
         password=password,
-        email="test@test.com"
+        email=email
     )
 
 
 @pytest.fixture
-async def login_data(user: User) -> LoginData:
-    return LoginData(username=user.username, password="27.:^:.Cl")
+async def login_data(user: User, plain_password: str) -> LoginData:
+    return LoginData(username=user.username, password=plain_password)
 
 
 @pytest.fixture
-async def verification(db: Database, user: User) -> Verification:
+async def verification_signup(db: Database, user: User) -> Verification:
     verification = Verification(
-        email=user.email,
+        user=user,
         exp_date=datetime.now(UTC) + timedelta(minutes=1),
         resend_date=datetime.now(UTC) + timedelta(minutes=1),
         created=datetime.now(UTC),
-        code="123456"
+        code="123456",
+        action=VerificationAction(
+            action_type=ActionType.signup,
+            data=UserUpdate(is_active=True)
+        )
+    )
+    await db.insert(verification)
+    return verification
+
+
+@pytest.fixture
+async def verification_email(db: Database, user: User, new_email: EmailStr) -> Verification:
+    verification = Verification(
+        user=user,
+        exp_date=datetime.now(UTC) + timedelta(minutes=1),
+        resend_date=datetime.now(UTC) + timedelta(minutes=1),
+        created=datetime.now(UTC),
+        code="123456",
+        action=VerificationAction(
+            action_type=ActionType.email,
+            data=UserUpdate(email=new_email)
+        )
+    )
+    await db.insert(verification)
+    return verification
+
+
+@pytest.fixture
+async def verification_password(
+        db: Database, user: User, plain_password: str, new_plain_password: str
+) -> Verification:
+    verification = Verification(
+        user=user,
+        exp_date=datetime.now(UTC) + timedelta(minutes=1),
+        resend_date=datetime.now(UTC) + timedelta(minutes=1),
+        created=datetime.now(UTC),
+        code="123456",
+        action=VerificationAction(
+            action_type=ActionType.password,
+            data=UserUpdate(password=get_password_hash(new_plain_password))
+        )
     )
     await db.insert(verification)
     return verification
