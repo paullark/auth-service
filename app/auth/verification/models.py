@@ -1,22 +1,28 @@
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import ConfigDict, EmailStr
+from pydantic import ConfigDict, EmailStr, BaseModel
 
 from app.auth.models import BaseDocument, Collection
+from app.auth.users.models import UserUpdate, User
 
 
-class VerificationAction(StrEnum):
+class ActionType(StrEnum):
     signup = "signup"
     email = "email"
     password = "password"
 
 
+class VerificationAction(BaseModel):
+    action_type: ActionType
+    data: UserUpdate
+
+
 class BaseVerification(BaseDocument):
-    email: EmailStr
+    user: User
     exp_date: datetime
     resend_date: datetime
-    # action: VerificationAction
+    action: VerificationAction
 
     model_config = ConfigDict(extra="forbid")
 

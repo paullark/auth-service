@@ -6,9 +6,9 @@ from app.auth.authentication.utils import verify_password
 from app.auth.authentication.exceptions import PasswordError, AuthenticationError
 from app.auth.authentication.models import SignupData
 from app.auth.database.services import db
-from app.auth.users.models import User, UserCreate, RoleType
+from app.auth.users.models import User, UserCreate, RoleType, UserUpdate
 from app.auth.users.services import create_user
-from app.auth.verification.models import VerificationOut
+from app.auth.verification.models import VerificationOut, VerificationAction, ActionType
 from app.auth.verification.services import create_or_update_verification
 
 
@@ -26,9 +26,15 @@ async def signup_user(signup_data: SignupData) -> VerificationOut:
             raise AuthenticationError(f"User {user.username} already exists.")
 
     else:
-        await create_user(UserCreate(**signup_data.dict(), roles=[RoleType.user]))
+        user = await create_user(
+            UserCreate(**signup_data.dict(), roles=[RoleType.user])
+        )
 
-    return await create_or_update_verification(signup_data.email)
+    action = VerificationAction(
+        action_type=ActionType.signup,
+        data=UserUpdate(is_active=True)
+    )
+    return await create_or_update_verification(user, action)
 
 
 async def login_user(username: str, password: str) -> TokenPair:

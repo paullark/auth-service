@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.exceptions import ResponseValidationError
 from pydantic import ValidationError
 from starlette import status
 
@@ -20,6 +21,7 @@ exception_handlers: ExceptionHandlersAlias = {
     AuthenticationError: exception_handler,
     VerificationError: exception_handler,
     ValidationError: pydantic_validation_exception_handler,
+    ResponseValidationError: pydantic_validation_exception_handler,
     PasswordError: exception_handler,
     TokenDataError: exception_handler,
     NotEnoughPermissionError: exception_handler,

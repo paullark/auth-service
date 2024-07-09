@@ -1,21 +1,20 @@
 import asyncio
 import random
-from datetime import datetime, timezone, timedelta, UTC
+from datetime import datetime, timedelta, UTC
 
 from bson import ObjectId
 from starlette import status
 
-from app.auth.authentication.services import authenticate_user
 from app.auth.config import settings
-from fastapi import BackgroundTasks
 from fastapi_mail import ConnectionConfig, MessageSchema, MessageType, FastMail
 from pydantic import EmailStr
 
 from app.auth.database.services import db
 from app.auth.database.types import PyObjectId
-from app.auth.users.services import get_user_by_email
+from app.auth.users.models import User
+from app.auth.users.services import update_user
 from app.auth.verification.exceptions import VerificationError
-from app.auth.verification.models import VerificationOut, Verification, BaseVerification
+from app.auth.verification.models import VerificationOut, Verification, BaseVerification, VerificationAction
 
 conf = ConnectionConfig(
     MAIL_USERNAME=settings.mail.username,
@@ -46,7 +45,9 @@ def generate_verification_code() -> str:
     return "".join(random.sample("0123456789", settings.auth.verification_code_length))
 
 
-async def create_or_update_verification(email: EmailStr) -> VerificationOut:
+async def create_or_update_verification(
+        user: User, action: VerificationAction, email: EmailStr | None = None
+) -> VerificationOut:
     exp_date = datetime.now(UTC) + timedelta(
         minutes=settings.auth.verification_exp_minutes
     )
@@ -54,41 +55,47 @@ async def create_or_update_verification(email: EmailStr) -> VerificationOut:
         minutes=settings.auth.verification_resend_minutes
     )
 
-    if verification := await db.find(Verification, {"email": email}):
+    if verification := await db.find(
+            Verification,
+            {"user._id": user.id, "action.action_type": action.action_type}
+    ):
 
         if datetime.utcnow() < verification.resend_date:
             raise VerificationError(
-                "Resend time is not expired.", status.HTTP_422_UNPROCESSABLE_ENTITY
+                "Resend time is not expired.",
+                status.HTTP_422_UNPROCESSABLE_ENTITY
             )
 
-        verification = await db.replace(
-            verification.copy(
-                update={
-                    "code": generate_verification_code(),
-                    "exp_date": exp_date,
-                    "resend_date": resend_date
-                }
-            )
+        verification.code = generate_verification_code()
+        verification.exp_date = exp_date
+        verification.resend_date = resend_date
+        verification.action.data = action.data
+        verification = await db.replace(verification)
+
+        await asyncio.create_task(
+            send_email(email or verification.user.email, verification.code)
         )
-        await asyncio.create_task(send_email(verification.email, verification.code))
 
         return VerificationOut(**verification.dict(exclude={"code"}))
 
     verification_data = BaseVerification(
-        email=email,
+        user=user,
         exp_date=exp_date,
         resend_date=resend_date,
-        created=datetime.now(UTC)
+        created=datetime.now(UTC),
+        action=action
     )
 
     verification = Verification(**verification_data.dict(), code=generate_verification_code())
     await db.insert(verification)
-    await asyncio.create_task(send_email(verification.email, verification.code))
+    await asyncio.create_task(
+        send_email(email or verification.user.email, verification.code)
+    )
 
     return VerificationOut(**verification_data.dict())
 
 
-async def confirm_verification(verification_id: PyObjectId, code: str):
+async def confirm_verification(verification_id: PyObjectId, code: str) -> User:
     verification = await db.find(
         Verification, {"_id": ObjectId(verification_id)}, exception=True
     )
@@ -103,7 +110,4 @@ async def confirm_verification(verification_id: PyObjectId, code: str):
             "Incorrect verification code.", status.HTTP_401_UNAUTHORIZED
         )
 
-    user = await get_user_by_email(verification.email)
-    user.is_active = True
-
-    return await authenticate_user(await db.replace(user))
+    return await update_user(verification.user, verification.action.data)
