@@ -2,13 +2,13 @@ from datetime import datetime
 from enum import IntEnum, StrEnum
 
 from bson import ObjectId
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.auth.database.types import PyObjectId
 
 
 class BaseDocument(BaseModel):
-    id: PyObjectId = Field(default_factory=ObjectId, alias='_id')
+    id: PyObjectId = Field(default_factory=ObjectId, alias="_id")
     created: datetime | None = None
     updated: datetime | None = None
 
@@ -16,7 +16,7 @@ class BaseDocument(BaseModel):
         arbitrary_types_allowed=True,
         json_encoders={ObjectId: str},
         populate_by_name=True,
-        extra="allow"
+        extra="allow",
     )
 
 
@@ -31,10 +31,7 @@ class ListParams(BaseModel):
     skip: int = Field(0, ge=0)
     limit: int = Field(0, ge=0)
 
-    model_config = ConfigDict(
-        extra="forbid",
-        frozen=True
-    )
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     def to_query(self) -> dict[str, any]:
         return {

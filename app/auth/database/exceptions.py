@@ -21,7 +21,7 @@ def document_not_found_exception_handler(
         "detail": {
             "collection": exception.collection,
             "query": str(exception.query),
-        }
+        },
     }
 
     return JSONResponse(content, status.HTTP_404_NOT_FOUND)

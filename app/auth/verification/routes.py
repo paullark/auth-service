@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Body
 
-from app.auth.authentication.tokens.models import TokenPair
 from app.auth.database.types import PyObjectId
 from app.auth.users.models import User
 from app.auth.verification.services import confirm_verification

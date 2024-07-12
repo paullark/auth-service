@@ -4,13 +4,21 @@ from pydantic import ValidationError
 from starlette import status
 
 from app.auth.authentication.exceptions import (
-    PasswordError, TokenDataError, NotEnoughPermissionError, AuthenticationError
+    AuthenticationError,
+    NotEnoughPermissionError,
+    PasswordError,
+    TokenDataError,
 )
 from app.auth.authentication.routes import auth
 from app.auth.config import settings
-from app.auth.database.exceptions import DocumentNotFound, document_not_found_exception_handler
+from app.auth.database.exceptions import (
+    DocumentNotFound,
+    document_not_found_exception_handler,
+)
 from app.auth.exceptions import (
-    pydantic_validation_exception_handler, exception_handler, ExceptionHandlersAlias
+    ExceptionHandlersAlias,
+    exception_handler,
+    pydantic_validation_exception_handler,
 )
 from app.auth.users.profiles.routes import profiles
 from app.auth.users.routes import users
@@ -30,7 +38,7 @@ exception_handlers: ExceptionHandlersAlias = {
 
 app = FastAPI(
     exception_handlers=exception_handlers,
-    openapi_url="/openapi.json" if settings.debug else ""
+    openapi_url="/openapi.json" if settings.debug else "",
 )
 
 app.include_router(users)

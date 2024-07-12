@@ -1,34 +1,45 @@
-from datetime import timedelta, datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 import jwt
 from bson import ObjectId
 from fastapi import Depends
-from fastapi.security import SecurityScopes, HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import (
+    HTTPAuthorizationCredentials, HTTPBearer, SecurityScopes
+)
 from jwt import ExpiredSignatureError
 from pydantic import ValidationError
 from starlette import status
 
-from app.auth.authentication.models import Authorization
-from app.auth.config import settings
-from app.auth.authentication.exceptions import TokenDataError, NotEnoughPermissionError
-from app.auth.authentication.tokens.models import (
-    TokenPair, BaseTokenData, TokenData, TokenType
+from app.auth.authentication.exceptions import (
+    NotEnoughPermissionError, TokenDataError
 )
+from app.auth.authentication.models import Authorization
+from app.auth.authentication.tokens.models import (
+    BaseTokenData,
+    TokenData,
+    TokenPair,
+    TokenType,
+)
+from app.auth.config import settings
 from app.auth.database.services import db
 from app.auth.users.models import User
 
 status_401 = status.HTTP_401_UNAUTHORIZED
 
 
-def create_token(data: BaseTokenData, token_type: TokenType, expires_in: int) -> str:
+def create_token(
+        data: BaseTokenData, token_type: TokenType, expires_in: int
+) -> str:
     token_data = TokenData(
         **data.dict(),
         token_type=token_type,
-        exp=datetime.now(timezone.utc) + timedelta(minutes=expires_in)
+        exp=datetime.now(timezone.utc) + timedelta(minutes=expires_in),
     )
     return jwt.encode(
-        token_data.dict(), settings.secret_key, algorithm=settings.auth.signing_algorithm
+        token_data.dict(),
+        settings.secret_key,
+        algorithm=settings.auth.signing_algorithm,
     )
 
 
@@ -47,7 +58,9 @@ def decode_token(token: str) -> TokenData:
     try:
         token_data = TokenData(
             **jwt.decode(
-                token, settings.secret_key, algorithms=[settings.auth.signing_algorithm]
+                token,
+                settings.secret_key,
+                algorithms=[settings.auth.signing_algorithm]
             )
         )
     except ExpiredSignatureError:
@@ -62,7 +75,9 @@ def decode_token(token: str) -> TokenData:
 
 def get_token_data(
     security_scopes: SecurityScopes,
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(HTTPBearer())]
+    credentials: Annotated[
+        HTTPAuthorizationCredentials, Depends(HTTPBearer())
+    ],
 ) -> TokenData:
     token_data = decode_token(credentials.credentials)
 
@@ -81,8 +96,12 @@ async def refresh_token_pair(token: str) -> TokenPair:
     if token_data.token_type != TokenType.refresh:
         raise TokenDataError("Invalid token type.", status_401)
 
-    user = await db.find(User, {"_id": ObjectId(token_data.user_id)}, exception=True)
-    authorization = await db.find(Authorization, {"refresh_token": token}, exception=True)
+    user = await db.find(
+        User, {"_id": ObjectId(token_data.user_id)}, exception=True
+    )
+    authorization = await db.find(
+        Authorization, {"refresh_token": token}, exception=True
+    )
     token_pair = create_token_pair(
         BaseTokenData(user_id=user.id, scopes=user.roles)
     )

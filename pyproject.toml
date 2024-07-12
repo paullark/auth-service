@@ -25,7 +25,6 @@ black = "^24.4.2"
 isort = "^5.13.2"
 flake8 = "^7.1.0"
 
-
 [tool.mypy]
 plugins = ["pydantic.mypy"]
 disable_error_code = "valid-type"

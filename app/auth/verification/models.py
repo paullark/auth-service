@@ -1,10 +1,10 @@
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import ConfigDict, EmailStr, BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.auth.models import BaseDocument, Collection
-from app.auth.users.models import UserUpdate, User
+from app.auth.users.models import User, UserUpdate
 
 
 class ActionType(StrEnum):

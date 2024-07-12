@@ -1,20 +1,26 @@
 import asyncio
 import random
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 
 from bson import ObjectId
+from fastapi_mail import (
+    ConnectionConfig, FastMail, MessageSchema, MessageType
+)
+from pydantic import EmailStr
 from starlette import status
 
 from app.auth.config import settings
-from fastapi_mail import ConnectionConfig, MessageSchema, MessageType, FastMail
-from pydantic import EmailStr
-
 from app.auth.database.services import db
 from app.auth.database.types import PyObjectId
 from app.auth.users.models import User
 from app.auth.users.services import update_user
 from app.auth.verification.exceptions import VerificationError
-from app.auth.verification.models import VerificationOut, Verification, BaseVerification, VerificationAction
+from app.auth.verification.models import (
+    BaseVerification,
+    Verification,
+    VerificationAction,
+    VerificationOut,
+)
 
 conf = ConnectionConfig(
     MAIL_USERNAME=settings.mail.username,
@@ -25,7 +31,7 @@ conf = ConnectionConfig(
     MAIL_STARTTLS=settings.mail.starttls,
     MAIL_SSL_TLS=settings.mail.ssl_tls,
     USE_CREDENTIALS=settings.mail.use_credentials,
-    VALIDATE_CERTS=settings.mail.validate_certs
+    VALIDATE_CERTS=settings.mail.validate_certs,
 )
 
 
@@ -34,7 +40,7 @@ async def send_email(email: EmailStr, code: str) -> None:
         subject="Pau App Verification Code",
         recipients=[email],
         body=code,
-        subtype=MessageType.html
+        subtype=MessageType.html,
     )
 
     fast_mail = FastMail(conf)
@@ -42,11 +48,13 @@ async def send_email(email: EmailStr, code: str) -> None:
 
 
 def generate_verification_code() -> str:
-    return "".join(random.sample("0123456789", settings.auth.verification_code_length))
+    return "".join(
+        random.sample("0123456789", settings.auth.verification_code_length)
+    )
 
 
 async def create_or_update_verification(
-        user: User, action: VerificationAction, email: EmailStr | None = None
+    user: User, action: VerificationAction, email: EmailStr | None = None
 ) -> VerificationOut:
     exp_date = datetime.now(UTC) + timedelta(
         minutes=settings.auth.verification_exp_minutes
@@ -56,8 +64,8 @@ async def create_or_update_verification(
     )
 
     if verification := await db.find(
-            Verification,
-            {"user._id": user.id, "action.action_type": action.action_type}
+        Verification,
+        {"user._id": user.id, "action.action_type": action.action_type}
     ):
 
         if datetime.utcnow() < verification.resend_date:
@@ -83,10 +91,12 @@ async def create_or_update_verification(
         exp_date=exp_date,
         resend_date=resend_date,
         created=datetime.now(UTC),
-        action=action
+        action=action,
     )
 
-    verification = Verification(**verification_data.dict(), code=generate_verification_code())
+    verification = Verification(
+        **verification_data.dict(), code=generate_verification_code()
+    )
     await db.insert(verification)
     await asyncio.create_task(
         send_email(email or verification.user.email, verification.code)
@@ -95,7 +105,9 @@ async def create_or_update_verification(
     return VerificationOut(**verification_data.dict())
 
 
-async def confirm_verification(verification_id: PyObjectId, code: str) -> User:
+async def confirm_verification(
+        verification_id: PyObjectId, code: str
+) -> User:
     verification = await db.find(
         Verification, {"_id": ObjectId(verification_id)}, exception=True
     )

@@ -7,9 +7,8 @@ from pydantic import EmailStr
 from app.auth.authentication.tokens.models import TokenData
 from app.auth.authentication.tokens.services import get_token_data
 from app.auth.authentication.utils import get_password_hash
-from app.auth.database.types import PyObjectId
 from app.auth.database.services import db
-
+from app.auth.database.types import PyObjectId
 from app.auth.models import ListParams
 from app.auth.users.models import User, UserCreate, UserUpdate
 
@@ -20,7 +19,9 @@ async def get_user(user_id: PyObjectId) -> User:
 
 async def get_user_by_name(username: str) -> User:
     return await db.find(
-        User, {"username": {"$regex": username, "$options": "i"}}, exception=True
+        User,
+        {"username": {"$regex": username, "$options": "i"}},
+        exception=True
     )
 
 
@@ -29,18 +30,22 @@ async def get_user_by_email(email: EmailStr) -> User:
 
 
 async def get_user_list(
-        username: str | None, email: EmailStr | None, params: ListParams
+    username: str | None, email: EmailStr | None, params: ListParams
 ) -> list[User]:
     query = (
-        {"username": {"$regex": username, "$options": "i"}} if username else {} |
-        {"email": {"$regex": email, "$options": "i"}} if email else {}
+        {"username": {"$regex": username, "$options": "i"}}
+        if username
+        else {} | {"email": {"$regex": email, "$options": "i"}}
+        if email else {}
     )
     return await db.find_many(User, query, **params.to_query())
 
 
 async def create_user(user: UserCreate) -> User:
     user = User(**user.model_dump())
-    return await db.insert(user.model_copy(update={"password": get_password_hash(user.password)}))
+    return await db.insert(
+        user.model_copy(update={"password": get_password_hash(user.password)})
+    )
 
 
 async def update_user(user: User, update: UserUpdate) -> User:

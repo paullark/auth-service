@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, UTC, timedelta
+from datetime import UTC, datetime
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
@@ -15,7 +15,10 @@ class Database:
         self.database: AsyncIOMotorDatabase = self.client[database_name]
 
     async def find[D](
-            self, model: type[D], query: dict[str, any], exception: bool = False
+            self,
+            model: type[D],
+            query: dict[str, any],
+            exception: bool = False
     ) -> D | None:
         document = await self.database[model.collection()].find_one(query)
         if document is not None:
@@ -24,13 +27,15 @@ class Database:
             raise DocumentNotFound(collection=model.collection(), query=query)
         return None
 
-    async def find_many[D](
-            self,
-            model: type[D],
-            query: dict[str, any],
-            sort: dict[str, SortDirection] | None = None,
-            skip: int | None = None,
-            limit: int | None = None
+    async def find_many[
+        D
+    ](
+        self,
+        model: type[D],
+        query: dict[str, any],
+        sort: dict[str, SortDirection] | None = None,
+        skip: int | None = None,
+        limit: int | None = None,
     ) -> list[D]:
         documents = self.database[model.collection()].find(
             query, sort=sort, skip=skip, limit=limit
@@ -57,10 +62,10 @@ class Database:
             }
         )
         query: dict[str, ObjectId] = {"_id": ObjectId(document.id)}
-        if res := await self.database[document.collection()].find_one_and_replace(
-            query,
-            document_dict,
-            return_document=ReturnDocument.AFTER
+        if res := await self.database[
+            document.collection()
+        ].find_one_and_replace(
+            query, document_dict, return_document=ReturnDocument.AFTER
         ):
             return type(document)(**res)
 

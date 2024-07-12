@@ -1,16 +1,14 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Security
+from fastapi import APIRouter, Body
 from starlette import status
 
-from app.auth.authentication.models import SignupData, LoginData
-from app.auth.authentication.tokens.models import TokenData, TokenPair
-from app.auth.authentication.services import signup_user, login_user
+from app.auth.authentication.models import LoginData, SignupData
+from app.auth.authentication.services import login_user, signup_user
+from app.auth.authentication.tokens.models import TokenPair
 from app.auth.authentication.tokens.services import (
-    get_token_data, refresh_token_pair, delete_authorization
+    delete_authorization, refresh_token_pair,
 )
-from app.auth.users.models import User
-from app.auth.users.services import get_user
 from app.auth.verification.models import VerificationOut
 
 auth = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -32,5 +30,7 @@ async def logout(refresh_token: Annotated[str, Body(embed=True)]) -> None:
 
 
 @auth.post("/refresh")
-async def refresh(refresh_token: Annotated[str, Body(embed=True)]) -> TokenPair:
+async def refresh(
+        refresh_token: Annotated[str, Body(embed=True)]
+) -> TokenPair:
     return await refresh_token_pair(refresh_token)

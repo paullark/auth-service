@@ -27,22 +27,30 @@ async def test_list(admin_app: AsyncClient, user: User) -> None:
 
 
 async def test_list_by_name(admin_app: AsyncClient, user: User) -> None:
-    response = await admin_app.get("/users/", params={"username": user.username})
+    response = await admin_app.get(
+        "/users/", params={"username": user.username}
+    )
     assert response.status_code == 200, response.json()
     assert len(response.json()) == 1
 
-    response = await admin_app.get("/users/", params={"username": "incorrect_username"})
+    response = await admin_app.get(
+        "/users/", params={"username": "incorrect_username"}
+    )
     assert not len(response.json())
 
 
-async def test_user_create(admin_app: AsyncClient, user_create: UserCreate) -> None:
-    response = await admin_app.post("/users/create", json=jsonable_encoder(user_create))
+async def test_user_create(
+        admin_app: AsyncClient, user_create: UserCreate
+) -> None:
+    response = await admin_app.post(
+        "/users/create", json=jsonable_encoder(user_create)
+    )
     assert response.status_code == 201, response.json()
     assert User(**response.json())
 
 
 async def test_user_update_roles(
-        admin_app: AsyncClient, user: User, user_update_roles: UserUpdate
+    admin_app: AsyncClient, user: User, user_update_roles: UserUpdate
 ) -> None:
     assert user.roles[0] == "user"
     response = await admin_app.patch(
@@ -53,7 +61,9 @@ async def test_user_update_roles(
     assert user.roles[0] == "admin"
 
 
-async def test_user_delete(admin_app: AsyncClient, user: User, db: Database) -> None:
+async def test_user_delete(
+        admin_app: AsyncClient, user: User, db: Database
+) -> None:
     response = await admin_app.delete(f"/users/{user.id}")
     assert response.status_code == 204
     assert not response.content

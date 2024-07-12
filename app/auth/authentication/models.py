@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 from app.auth.database.types import PyObjectId
 from app.auth.models import BaseDocument, Collection
