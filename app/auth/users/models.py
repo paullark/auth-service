@@ -24,7 +24,7 @@ class User(BaseUser, BaseDocument):
     is_active: bool = False
 
     @classmethod
-    def collection(cls):
+    def collection(cls) -> str:
         return Collection.users
 
 

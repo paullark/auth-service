@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import IntEnum, StrEnum
+from typing import Any
 
 from bson import ObjectId
 from pydantic import BaseModel, ConfigDict, Field
@@ -8,13 +9,12 @@ from app.auth.database.types import PyObjectId
 
 
 class BaseDocument(BaseModel):
-    id: PyObjectId = Field(default_factory=ObjectId, alias="_id")
+    id: PyObjectId | ObjectId = Field(default_factory=ObjectId, alias="_id")
     created: datetime | None = None
     updated: datetime | None = None
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str},
         populate_by_name=True,
         extra="allow",
     )
@@ -33,7 +33,7 @@ class ListParams(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    def to_query(self) -> dict[str, any]:
+    def to_query(self) -> dict[str, Any]:
         return {
             "sort": {self.sort_key: self.sort_direction},
             "skip": self.skip,

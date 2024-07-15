@@ -40,7 +40,7 @@ async def test_list_by_name(admin_app: AsyncClient, user: User) -> None:
 
 
 async def test_user_create(
-        admin_app: AsyncClient, user_create: UserCreate
+    admin_app: AsyncClient, user_create: UserCreate
 ) -> None:
     response = await admin_app.post(
         "/users/create", json=jsonable_encoder(user_create)
@@ -62,10 +62,10 @@ async def test_user_update_roles(
 
 
 async def test_user_delete(
-        admin_app: AsyncClient, user: User, db: Database
+    admin_app: AsyncClient, user: User, db: Database
 ) -> None:
     response = await admin_app.delete(f"/users/{user.id}")
     assert response.status_code == 204
     assert not response.content
-    user = await db.find(User, {"username": user.username})
-    assert user is None
+    deleted_user = await db.find(User, {"username": user.username})
+    assert deleted_user is None

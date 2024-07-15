@@ -7,7 +7,8 @@ from app.auth.authentication.models import LoginData, SignupData
 from app.auth.authentication.services import login_user, signup_user
 from app.auth.authentication.tokens.models import TokenPair
 from app.auth.authentication.tokens.services import (
-    delete_authorization, refresh_token_pair,
+    delete_authorization,
+    refresh_token_pair,
 )
 from app.auth.verification.models import VerificationOut
 
@@ -31,6 +32,6 @@ async def logout(refresh_token: Annotated[str, Body(embed=True)]) -> None:
 
 @auth.post("/refresh")
 async def refresh(
-        refresh_token: Annotated[str, Body(embed=True)]
+    refresh_token: Annotated[str, Body(embed=True)]
 ) -> TokenPair:
     return await refresh_token_pair(refresh_token)

@@ -14,19 +14,17 @@ from app.auth.users.models import User, UserCreate, UserUpdate
 
 
 async def get_user(user_id: PyObjectId) -> User:
-    return await db.find(User, {"_id": ObjectId(user_id)}, exception=True)
+    return await db.find(User, {"_id": ObjectId(user_id)}, True)
 
 
 async def get_user_by_name(username: str) -> User:
     return await db.find(
-        User,
-        {"username": {"$regex": username, "$options": "i"}},
-        exception=True
+        User, {"username": {"$regex": username, "$options": "i"}}, True
     )
 
 
 async def get_user_by_email(email: EmailStr) -> User:
-    return await db.find(User, {"email": email}, exception=True)
+    return await db.find(User, {"email": email}, True)
 
 
 async def get_user_list(
@@ -35,14 +33,15 @@ async def get_user_list(
     query = (
         {"username": {"$regex": username, "$options": "i"}}
         if username
-        else {} | {"email": {"$regex": email, "$options": "i"}}
-        if email else {}
+        else (
+            {} | {"email": {"$regex": email, "$options": "i"}} if email else {}
+        )
     )
     return await db.find_many(User, query, **params.to_query())
 
 
-async def create_user(user: UserCreate) -> User:
-    user = User(**user.model_dump())
+async def create_user(user_create: UserCreate) -> User:
+    user = User(**user_create.model_dump())
     return await db.insert(
         user.model_copy(update={"password": get_password_hash(user.password)})
     )

@@ -5,14 +5,17 @@ import jwt
 from bson import ObjectId
 from fastapi import Depends
 from fastapi.security import (
-    HTTPAuthorizationCredentials, HTTPBearer, SecurityScopes
+    HTTPAuthorizationCredentials,
+    HTTPBearer,
+    SecurityScopes,
 )
 from jwt import ExpiredSignatureError
 from pydantic import ValidationError
 from starlette import status
 
 from app.auth.authentication.exceptions import (
-    NotEnoughPermissionError, TokenDataError
+    NotEnoughPermissionError,
+    TokenDataError,
 )
 from app.auth.authentication.models import Authorization
 from app.auth.authentication.tokens.models import (
@@ -29,18 +32,19 @@ status_401 = status.HTTP_401_UNAUTHORIZED
 
 
 def create_token(
-        data: BaseTokenData, token_type: TokenType, expires_in: int
+    data: BaseTokenData, token_type: TokenType, expires_in: int
 ) -> str:
     token_data = TokenData(
         **data.dict(),
         token_type=token_type,
         exp=datetime.now(timezone.utc) + timedelta(minutes=expires_in),
     )
-    return jwt.encode(
+    token: str = jwt.encode(
         token_data.dict(),
         settings.secret_key,
         algorithm=settings.auth.signing_algorithm,
     )
+    return token
 
 
 def create_token_pair(data: BaseTokenData) -> TokenPair:
@@ -60,7 +64,7 @@ def decode_token(token: str) -> TokenData:
             **jwt.decode(
                 token,
                 settings.secret_key,
-                algorithms=[settings.auth.signing_algorithm]
+                algorithms=[settings.auth.signing_algorithm],
             )
         )
     except ExpiredSignatureError:
@@ -96,12 +100,12 @@ async def refresh_token_pair(token: str) -> TokenPair:
     if token_data.token_type != TokenType.refresh:
         raise TokenDataError("Invalid token type.", status_401)
 
-    user = await db.find(
-        User, {"_id": ObjectId(token_data.user_id)}, exception=True
-    )
+    user = await db.find(User, {"_id": ObjectId(token_data.user_id)}, True)
+    assert user
     authorization = await db.find(
-        Authorization, {"refresh_token": token}, exception=True
+        Authorization, {"refresh_token": token}, True
     )
+    assert authorization
     token_pair = create_token_pair(
         BaseTokenData(user_id=user.id, scopes=user.roles)
     )
@@ -125,6 +129,6 @@ async def authenticate_user(user: User) -> TokenPair:
 
 async def delete_authorization(token: str) -> None:
     authorization = await db.find(
-        Authorization, {"refresh_token": token}, exception=True
+        Authorization, {"refresh_token": token}, True
     )
     await db.delete(authorization)

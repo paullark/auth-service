@@ -12,7 +12,7 @@ async def test_confirm_signup(
 ) -> None:
     response = await user_app.post(
         f"/verification/confirm/{verification_signup.id}",
-        json={"code": "123456"}
+        json={"code": "123456"},
     )
     assert response.status_code == 200
     assert User(**response.json())
@@ -23,7 +23,7 @@ async def test_confirm_invalid_code(
 ) -> None:
     response = await user_app.post(
         f"/verification/confirm/{verification_signup.id}",
-        json={"code": "654321"}
+        json={"code": "654321"},
     )
     assert response.status_code == 401
     assert response.json()["detail"] == "Incorrect verification code."
@@ -32,8 +32,8 @@ async def test_confirm_invalid_code(
 async def test_confirm_expired_code(
     user_app: AsyncClient, verification_signup: Verification, db: Database
 ) -> None:
-    verification_signup.exp_date = (
-            verification_signup.exp_date - timedelta(minutes=2)
+    verification_signup.exp_date = verification_signup.exp_date - timedelta(
+        minutes=2
     )
     verification = await db.replace(verification_signup)
 
@@ -49,7 +49,7 @@ async def test_confirm_email(
 ) -> None:
     response = await user_app.post(
         f"/verification/confirm/{verification_email.id}",
-        json={"code": "123456"}
+        json={"code": "123456"},
     )
     assert response.status_code == 200
     assert User(**response.json())
@@ -60,7 +60,7 @@ async def test_confirm_password(
 ) -> None:
     response = await user_app.post(
         f"/verification/confirm/{verification_password.id}",
-        json={"code": "123456"}
+        json={"code": "123456"},
     )
     assert response.status_code == 200
     assert User(**response.json())

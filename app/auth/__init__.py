@@ -12,8 +12,9 @@ from app.auth.authentication.exceptions import (
 from app.auth.authentication.routes import auth
 from app.auth.config import settings
 from app.auth.database.exceptions import (
+    DatabaseInsertionError,
     DocumentNotFound,
-    document_not_found_exception_handler,
+    db_exception_handler,
 )
 from app.auth.exceptions import (
     ExceptionHandlersAlias,
@@ -33,7 +34,8 @@ exception_handlers: ExceptionHandlersAlias = {
     PasswordError: exception_handler,
     TokenDataError: exception_handler,
     NotEnoughPermissionError: exception_handler,
-    DocumentNotFound: document_not_found_exception_handler,
+    DocumentNotFound: db_exception_handler,
+    DatabaseInsertionError: db_exception_handler,
 }
 
 app = FastAPI(

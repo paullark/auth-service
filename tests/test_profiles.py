@@ -26,7 +26,7 @@ async def test_change_username(user_app: AsyncClient, user: User) -> None:
 
 
 async def test_change_username_exists(
-        user_app: AsyncClient, user: User
+    user_app: AsyncClient, user: User
 ) -> None:
     response = await user_app.put(
         "/profiles/username", json={"username": "user"}
@@ -38,9 +38,7 @@ async def test_change_username_exists(
 async def test_change_email(
     user_app: AsyncClient, user: User, new_email: EmailStr
 ) -> None:
-    response = await user_app.put(
-        "/profiles/email", json={"email": new_email}
-    )
+    response = await user_app.put("/profiles/email", json={"email": new_email})
     assert response.status_code == 200, response.json()
     verification = VerificationOut(**response.json())
     assert verification.action.data == UserUpdate(email=new_email)
@@ -48,18 +46,20 @@ async def test_change_email(
 
 async def test_change_password(
     user_app: AsyncClient,
-        user: User,
-        plain_password: str,
-        new_plain_password: str
+    user: User,
+    plain_password: str,
+    new_plain_password: str,
 ) -> None:
     response = await user_app.put(
         "/profiles/password",
         json={
-            "old_password": plain_password, "new_password": new_plain_password
+            "old_password": plain_password,
+            "new_password": new_plain_password,
         },
     )
     assert response.status_code == 200, response.json()
     verification = VerificationOut(**response.json())
+    assert verification.action.data.password
     assert verify_password(
         new_plain_password, verification.action.data.password
     )

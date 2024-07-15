@@ -31,7 +31,7 @@ class Verification(BaseVerification):
     code: str
 
     @classmethod
-    def collection(cls):
+    def collection(cls) -> str:
         return Collection.verifications
 
 

@@ -24,12 +24,13 @@ mypy = "^1.10.1"
 black = "^24.4.2"
 isort = "^5.13.2"
 flake8 = "^7.1.0"
+types-passlib = "1.7.7.20240327"
+types-requests = "2.32.0.20240712"
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
 disable_error_code = "valid-type"
 show_error_codes = true
-disallow_any_generics = true
 disallow_untyped_calls = true
 disallow_untyped_defs = true
 check_untyped_defs = true
@@ -37,6 +38,11 @@ warn_unused_ignores = true
 warn_return_any = true
 implicit_reexport = false
 strict_equality = true
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = ["dynaconf.*"]
+ignore_missing_imports = true
 
 [tool.isort]
 profile = "black"
@@ -48,3 +54,4 @@ ignore = ["E203"]
 
 [tool.black]
 target_version = ["py312"]
+line-length = 79

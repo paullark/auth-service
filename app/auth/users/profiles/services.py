@@ -1,14 +1,19 @@
 from pydantic import EmailStr
 from starlette import status
 
-from app.auth import AuthenticationError, PasswordError
+from app.auth.authentication.exceptions import (
+    AuthenticationError,
+    PasswordError,
+)
 from app.auth.authentication.utils import get_password_hash, verify_password
 from app.auth.database.services import db
 from app.auth.users.models import User, UserUpdate
 from app.auth.users.profiles.models import PasswordUpdate
 from app.auth.users.services import CurrentUser, get_user
 from app.auth.verification.models import (
-    ActionType, VerificationAction, VerificationOut
+    ActionType,
+    VerificationAction,
+    VerificationOut,
 )
 from app.auth.verification.services import create_or_update_verification
 
@@ -37,7 +42,7 @@ async def change_email(user: User, email: EmailStr) -> VerificationOut:
 
 
 async def change_password(
-        passwords: PasswordUpdate, user: User
+    passwords: PasswordUpdate, user: User
 ) -> VerificationOut:
     if not verify_password(passwords.old_password, user.password):
         raise PasswordError(

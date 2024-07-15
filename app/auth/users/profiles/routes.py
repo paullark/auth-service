@@ -23,7 +23,7 @@ async def get_me(user: Annotated[User, Depends(get_current_user)]) -> User:
 @profiles.put("/username")
 async def change_username_route(
     user: Annotated[User, Depends(get_current_user)],
-    username: str = Body(embed=True)
+    username: str = Body(embed=True),
 ) -> User:
     return await change_username(user, username)
 
@@ -31,14 +31,13 @@ async def change_username_route(
 @profiles.put("/email")
 async def change_email_route(
     user: Annotated[User, Depends(get_current_user)],
-    email: str = Body(embed=True)
+    email: str = Body(embed=True),
 ) -> VerificationOut:
     return await change_email(user, email)
 
 
 @profiles.put("/password")
 async def change_password_route(
-    passwords: PasswordUpdate,
-    user: Annotated[User, Depends(get_current_user)]
+    passwords: PasswordUpdate, user: Annotated[User, Depends(get_current_user)]
 ) -> VerificationOut:
     return await change_password(passwords, user)

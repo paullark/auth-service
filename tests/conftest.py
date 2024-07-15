@@ -1,5 +1,5 @@
 from datetime import UTC, datetime, timedelta
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator
 
 import jwt
 import pytest
@@ -8,9 +8,7 @@ from httpx import AsyncClient, Headers
 from pydantic import EmailStr
 
 from app.auth import app as main_app
-from app.auth.authentication.models import (
-    Authorization, LoginData, SignupData
-)
+from app.auth.authentication.models import Authorization, LoginData, SignupData
 from app.auth.authentication.tokens.models import TokenData, TokenPair
 from app.auth.authentication.utils import get_password_hash
 from app.auth.config import settings
@@ -19,12 +17,14 @@ from app.auth.database.services import db as database
 from app.auth.database.types import PyObjectId
 from app.auth.users.models import User, UserCreate, UserUpdate
 from app.auth.verification.models import (
-    ActionType, Verification, VerificationAction
+    ActionType,
+    Verification,
+    VerificationAction,
 )
 
 
 @pytest.fixture
-async def db() -> Database:
+async def db() -> AsyncGenerator[Database, None]:
     db_name = str(ObjectId())
     database.database = database.client[db_name]
 
@@ -59,7 +59,7 @@ async def password(plain_password: str) -> str:
 
 
 @pytest.fixture
-async def secret_key() -> str:
+async def secret_key() -> Any:
     return settings.secret_key
 
 

@@ -1,7 +1,8 @@
 from starlette import status
 
 from app.auth.authentication.exceptions import (
-    AuthenticationError, PasswordError
+    AuthenticationError,
+    PasswordError,
 )
 from app.auth.authentication.models import SignupData
 from app.auth.authentication.tokens.models import TokenPair
@@ -11,7 +12,9 @@ from app.auth.database.services import db
 from app.auth.users.models import RoleType, User, UserCreate, UserUpdate
 from app.auth.users.services import create_user
 from app.auth.verification.models import (
-    ActionType, VerificationAction, VerificationOut
+    ActionType,
+    VerificationAction,
+    VerificationOut,
 )
 from app.auth.verification.services import create_or_update_verification
 
@@ -22,7 +25,7 @@ async def signup_user(signup_data: SignupData) -> VerificationOut:
         {
             "$or": [
                 {"username": signup_data.username},
-                {"email": signup_data.email}
+                {"email": signup_data.email},
             ]
         },
     ):
@@ -41,7 +44,7 @@ async def signup_user(signup_data: SignupData) -> VerificationOut:
 
 
 async def login_user(username: str, password: str) -> TokenPair:
-    user = await db.find(User, {"username": username}, exception=True)
+    user = await db.find(User, {"username": username}, True)
     if not user.is_active:
         raise AuthenticationError(
             "User is not verified.", status.HTTP_401_UNAUTHORIZED

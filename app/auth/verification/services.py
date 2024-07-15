@@ -3,9 +3,7 @@ import random
 from datetime import UTC, datetime, timedelta
 
 from bson import ObjectId
-from fastapi_mail import (
-    ConnectionConfig, FastMail, MessageSchema, MessageType
-)
+from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from pydantic import EmailStr
 from starlette import status
 
@@ -65,13 +63,13 @@ async def create_or_update_verification(
 
     if verification := await db.find(
         Verification,
-        {"user._id": user.id, "action.action_type": action.action_type}
+        {"user._id": user.id, "action.action_type": action.action_type},
     ):
 
         if datetime.utcnow() < verification.resend_date:
             raise VerificationError(
                 "Resend time is not expired.",
-                status.HTTP_422_UNPROCESSABLE_ENTITY
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
             )
 
         verification.code = generate_verification_code()
@@ -105,11 +103,9 @@ async def create_or_update_verification(
     return VerificationOut(**verification_data.dict())
 
 
-async def confirm_verification(
-        verification_id: PyObjectId, code: str
-) -> User:
+async def confirm_verification(verification_id: PyObjectId, code: str) -> User:
     verification = await db.find(
-        Verification, {"_id": ObjectId(verification_id)}, exception=True
+        Verification, {"_id": ObjectId(verification_id)}, True
     )
 
     if datetime.utcnow() > verification.exp_date:
