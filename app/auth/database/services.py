@@ -83,7 +83,7 @@ class Database:
         if not isinstance(document.id, ObjectId):
             document.id = ObjectId(document.id)
         res = await self.database[document.collection()].insert_one(
-            document.dict(by_alias=True)
+            document.model_dump(by_alias=True)
         )
         new_document = await self.find(
             type(document), {"_id": res.inserted_id}
@@ -96,7 +96,7 @@ class Database:
         )
 
     async def replace(self, document: Document) -> Document:
-        document_dict = document.dict(by_alias=True)
+        document_dict = document.model_dump(by_alias=True)
         document_dict.update(
             {
                 "_id": ObjectId(document_dict["_id"]),

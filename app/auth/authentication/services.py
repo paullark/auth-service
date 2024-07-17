@@ -34,7 +34,7 @@ async def signup_user(signup_data: SignupData) -> VerificationOut:
 
     else:
         user = await create_user(
-            UserCreate(**signup_data.dict(), roles=[RoleType.user])
+            UserCreate(**signup_data.model_dump(), roles=[RoleType.user])
         )
 
     action = VerificationAction(

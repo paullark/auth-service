@@ -82,7 +82,7 @@ async def create_or_update_verification(
             send_email(email or verification.user.email, verification.code)
         )
 
-        return VerificationOut(**verification.dict(exclude={"code"}))
+        return VerificationOut(**verification.model_dump(exclude={"code"}))
 
     verification_data = BaseVerification(
         user=user,
@@ -93,14 +93,14 @@ async def create_or_update_verification(
     )
 
     verification = Verification(
-        **verification_data.dict(), code=generate_verification_code()
+        **verification_data.model_dump(), code=generate_verification_code()
     )
     await db.insert(verification)
     await asyncio.create_task(
         send_email(email or verification.user.email, verification.code)
     )
 
-    return VerificationOut(**verification_data.dict())
+    return VerificationOut(**verification_data.model_dump())
 
 
 async def confirm_verification(verification_id: PyObjectId, code: str) -> User:

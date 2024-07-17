@@ -22,7 +22,7 @@ async def signup(signin: SignupData) -> VerificationOut:
 
 @auth.post("/login")
 async def login(login_data: LoginData) -> TokenPair:
-    return await login_user(**login_data.dict())
+    return await login_user(**login_data.model_dump())
 
 
 @auth.post("/logout", status_code=status.HTTP_401_UNAUTHORIZED)
