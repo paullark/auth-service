@@ -54,6 +54,12 @@ def generate_verification_code() -> str:
 async def create_or_update_verification(
     user: User, action: VerificationAction, email: EmailStr | None = None
 ) -> VerificationOut:
+    """
+    Find a verification by user id and action type
+    or create a new one if resend time is expired.
+    Send generated code by email.
+    Return verification instance includes user data, action and timeouts.
+    """
     exp_date = datetime.now(UTC) + timedelta(
         minutes=settings.auth.verification_exp_minutes
     )
@@ -104,6 +110,10 @@ async def create_or_update_verification(
 
 
 async def confirm_verification(verification_id: PyObjectId, code: str) -> User:
+    """
+    Find a verification by id and verify by the code.
+    Return updated user object
+    """
     verification = await db.find(
         Verification, {"_id": ObjectId(verification_id)}, True
     )

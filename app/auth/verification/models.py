@@ -14,6 +14,8 @@ class ActionType(StrEnum):
 
 
 class VerificationAction(BaseModel):
+    """Specify user model fields that will be updated depending on action"""
+
     action_type: ActionType
     data: UserUpdate
 

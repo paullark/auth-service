@@ -19,6 +19,8 @@ Document = TypeVar("Document", User, Authorization, Verification)
 
 
 class Database:
+    """ODM for connecting to MongoDB and general methods to use it"""
+
     def __init__(self, url: str, database_name: str) -> None:
         self.client: AsyncIOMotorClient[Any] = AsyncIOMotorClient(url)
         self.database: AsyncIOMotorDatabase[Any] = self.client[database_name]
@@ -30,6 +32,10 @@ class Database:
         query: dict[str, any],
         exception: Literal[True],
     ) -> Document:
+        """
+        @overload to specify for mypy,
+        if the exception arg is true, return value never be None.
+        """
         pass
 
     @overload
@@ -56,6 +62,15 @@ class Database:
         query: dict[str, any],
         exception: bool = False,
     ) -> Document | None:
+        """
+        The method to find a document.
+        Params:
+            model (type[Document]) : The model to get a collection
+            and validate result;
+            exception (bool) : Raise exception if document is not found,
+            return None if false
+        Return the instance of model
+        """
         document = await self.database[model.collection()].find_one(query)
         if document is not None:
             return model(**document)
@@ -79,7 +94,18 @@ class Database:
         return [model(**document) async for document in documents]
 
     async def insert(self, document: Document) -> Document:
+        """
+        The method to insert a document.
+        If the document id is str then
+        it will be replaced with the ObjectId
+        Params:
+            document (Document): the instance of
+            User, Authorization or Verification
+        Return the inserted document or raise DatabaseInsertionError
+        """
         document.created = datetime.now(UTC)
+
+        # Check if an inserting document id is ObjectId
         if not isinstance(document.id, ObjectId):
             document.id = ObjectId(document.id)
         res = await self.database[document.collection()].insert_one(
@@ -96,6 +122,12 @@ class Database:
         )
 
     async def replace(self, document: Document) -> Document:
+        """
+        The method to update a document.
+        Params:
+            document (Document): the instance that should be updated
+        Return the updated document of raise DocumentNotFound
+        """
         document_dict = document.model_dump(by_alias=True)
         document_dict.update(
             {

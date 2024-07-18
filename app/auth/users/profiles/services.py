@@ -32,6 +32,7 @@ async def change_username(user: User, username: str) -> User:
 
 
 async def change_email(user: User, email: EmailStr) -> VerificationOut:
+    """Create a new verification for email updating"""
     if exist_user := await db.find(User, {"email": email}):
         raise AuthenticationError(f"User {exist_user.email} already exists.")
 
@@ -44,6 +45,10 @@ async def change_email(user: User, email: EmailStr) -> VerificationOut:
 async def change_password(
     passwords: PasswordUpdate, user: User
 ) -> VerificationOut:
+    """
+    Verify old password
+    and create a new verification for new password updating
+    """
     if not verify_password(passwords.old_password, user.password):
         raise PasswordError(
             "Incorrect password.", status.HTTP_422_UNPROCESSABLE_ENTITY

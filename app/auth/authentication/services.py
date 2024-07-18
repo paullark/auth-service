@@ -20,6 +20,10 @@ from app.auth.verification.services import create_or_update_verification
 
 
 async def signup_user(signup_data: SignupData) -> VerificationOut:
+    """
+    Check if user exists else create new unverified user.
+    Create or update verification instance and return it
+    """
     if user := await db.find(
         User,
         {
@@ -44,6 +48,7 @@ async def signup_user(signup_data: SignupData) -> VerificationOut:
 
 
 async def login_user(username: str, password: str) -> TokenPair:
+    """Return token pair if user exists and is active"""
     user = await db.find(User, {"username": username}, True)
     if not user.is_active:
         raise AuthenticationError(

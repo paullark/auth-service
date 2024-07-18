@@ -9,6 +9,8 @@ from app.auth.database.types import PyObjectId
 
 
 class BaseDocument(BaseModel):
+    """The base model for all documents in the database"""
+
     id: PyObjectId | ObjectId = Field(default_factory=ObjectId, alias="_id")
     created: datetime | None = None
     updated: datetime | None = None
@@ -26,6 +28,8 @@ class SortDirection(IntEnum):
 
 
 class ListParams(BaseModel):
+    """The parameters for multiple documents search"""
+
     sort_key: str = "_id"
     sort_direction: SortDirection = SortDirection.descending
     skip: int = Field(0, ge=0)

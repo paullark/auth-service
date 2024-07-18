@@ -20,6 +20,11 @@ class LoginData(BaseAuthData):
 
 
 class Authorization(BaseDocument):
+    """
+    Authorization model is used to keep and control refresh tokens.
+    After user is logout, document with token will be deleted
+    """
+
     user_id: PyObjectId
     refresh_token: str
 

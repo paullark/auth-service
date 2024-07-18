@@ -17,6 +17,7 @@ from app.auth.users.services import (
     update_user,
 )
 
+"""User must have "admin" role to access this"""
 users = APIRouter(
     prefix="/users",
     tags=["Users"],
